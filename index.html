@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Disk Manager | Neo-Brutalism</title>
+    <title>Gestor de Discos | Comfamiliar Risaralda</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,34 +19,48 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* Pequeños ajustes de layout para el nuevo header */
-        .header-right-group {
+        /* Ajustes específicos para el logo de Comfamiliar */
+        .brand-logo-img {
+            height: 50px; /* Ajusta la altura del logo */
+            width: auto;
+            object-fit: contain;
+            border-radius: 4px; /* Un toque suave en las esquinas */
+        }
+        
+        .brand-text-column {
             display: flex;
-            align-items: center;
-            gap: 1rem;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1.2;
         }
-        /* Ajuste para que el logo link no tenga subrayado */
-        .brand-link {
-            text-decoration: none;
-            color: inherit;
+
+        .brand-text-column h1 {
+            font-size: 1.2rem;
+            margin: 0;
+            color: var(--primary); /* Usará el color corporativo */
         }
-        /* Estilos temporales de layout (se moverán a CSS) */
-        .chart-controls { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
-        .filter-bar { display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--surface-color); border: var(--border-width) solid var(--border-color); border-radius: 8px; align-items: center; flex-wrap: wrap; box-shadow: var(--shadow-hard);}
-        .floating-bar { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(150%); background: var(--text-color); color: var(--bg-color); padding: 1rem 2rem; border-radius: 50px; display: flex; gap: 1.5rem; align-items: center; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; box-shadow: 4px 4px 0 0 rgba(0,0,0,0.2); width: 90%; max-width: 600px; justify-content: space-between; border: 2px solid var(--border-color);}
-        .floating-bar.active { transform: translateX(-50%) translateY(0); }
-        .fb-actions { display: flex; gap: 0.5rem; }
+        
+        .brand-text-column small {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Ajuste para que los filtros nuevos quepan bien */
+        .filter-bar {
+            gap: 0.8rem;
+        }
     </style>
 </head>
 <body data-theme="light">
 
     <section id="login-screen" class="login-overlay">
         <div class="login-card neo-card">
-            <div class="login-icon"><i class="ph-bold ph-lock-key"></i></div>
-            <h1>Acceso Corporativo</h1>
-            <p>Sistema de gestión de activos IT.</p>
+            <img src="https://www.ssf.gov.co/documents/20127/107472/comfamiliar+risaralda+supersubsidio.jpeg/508fb8c5-e8a4-a34e-3d5a-db473df17743?version=1.0&t=1671123816125" alt="Logo Comfamiliar" style="max-width: 200px; margin-bottom: 1.5rem;">
+            <h1>Acceso Restringido</h1>
+            <p>Sistema de Gestión de Activos TI</p>
             <button id="btn-login" class="neo-btn primary">
-                <i class="ph-bold ph-google-logo"></i> Iniciar Sesión
+                <i class="ph-bold ph-google-logo"></i> Iniciar con Google
             </button>
         </div>
     </section>
@@ -54,15 +68,18 @@
     <div class="layout-wrapper">
         
         <header class="neo-header">
-            <a href="#" class="brand-link" title="Ir al Inicio">
+            <a href="#" class="brand-link" title="Recargar Dashboard">
                 <div class="brand">
-                    <i class="ph-bold ph-hard-drives"></i>
-                    <h1>CorpData</h1>
+                    <img src="https://www.ssf.gov.co/documents/20127/107472/comfamiliar+risaralda+supersubsidio.jpeg/508fb8c5-e8a4-a34e-3d5a-db473df17743?version=1.0&t=1671123816125" alt="Logo" class="brand-logo-img">
+                    <div class="brand-text-column">
+                        <h1>Gestor de Discos</h1>
+                        <small>Comfamiliar Risaralda</small>
+                    </div>
                 </div>
             </a>
             
             <div class="header-right-group">
-                <button id="btn-theme-toggle" class="neo-btn small ghost icon-only" title="Cambiar modo Claro/Oscuro">
+                <button id="btn-theme-toggle" class="neo-btn small ghost icon-only" title="Cambiar Tema">
                     <i id="theme-icon" class="ph-bold ph-moon"></i>
                 </button>
 
@@ -71,10 +88,13 @@
                         <img id="user-avatar" src="" alt="User" class="avatar">
                         <span id="user-name">Usuario</span>
                     </div>
-                    <button id="btn-logout" class="neo-btn small danger"><i class="ph-bold ph-sign-out"></i></button>
+                    <button id="btn-logout" class="neo-btn small danger" title="Cerrar Sesión">
+                        <i class="ph-bold ph-sign-out"></i>
+                    </button>
                 </div>
+
                 <div class="user-status" id="system-status-badge">
-                    <span class="status-indicator online"></span><p>Conectado</p>
+                    <span class="status-indicator online"></span><p>Sistema Online</p>
                 </div>
             </div>
         </header>
@@ -84,23 +104,24 @@
             <section class="analytics-wrapper">
                 <div class="neo-card" style="padding: 1.5rem;">
                     <div class="section-header" style="justify-content: space-between; display: flex; align-items: center; margin-bottom: 1rem;">
-                        <h3><i class="ph-bold ph-chart-bar"></i> Métricas Clave</h3>
+                        <h3><i class="ph-bold ph-chart-bar"></i> Métricas de Inventario</h3>
                     </div>
                     
                     <div class="chart-controls">
                         <select id="chart-group-by" class="neo-input small" style="width: auto;">
-                            <option value="marca">Agrupar: Marca</option>
                             <option value="estado">Agrupar: Estado</option>
+                            <option value="marca">Agrupar: Marca</option>
                             <option value="tipo">Agrupar: Tipo</option>
                             <option value="equipoId">Agrupar: Equipo</option>
                         </select>
                         <select id="chart-metric" class="neo-input small" style="width: auto;">
                             <option value="count">Métrica: Cantidad</option>
-                            <option value="capacity">Métrica: Capacidad (TB)</option>
+                            <option value="capacity">Métrica: Capacidad Total (TB)</option>
                         </select>
                         <select id="chart-type" class="neo-input small" style="width: auto;">
-                            <option value="doughnut">Gráfico: Dona</option>
-                            <option value="bar">Gráfico: Barras</option>
+                            <option value="doughnut">Visual: Dona</option>
+                            <option value="bar">Visual: Barras</option>
+                            <option value="pie">Visual: Torta</option>
                         </select>
                     </div>
 
@@ -110,11 +131,11 @@
                 </div>
 
                 <div class="neo-card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
-                    <h3>Inventario Total</h3>
+                    <h3>Total Visible</h3>
                     <div style="margin: 1.5rem 0;">
                         <span id="total-disks-display" style="font-size: 4rem; font-weight: 700; line-height: 1; color: var(--primary);">0</span>
                     </div>
-                    <span class="status-badge revisar" style="font-size: 0.9rem;">Unidades Visibles</span>
+                    <span class="status-badge revisar" style="font-size: 0.9rem;">Discos según filtros</span>
                 </div>
             </section>
 
@@ -123,34 +144,55 @@
                 <div class="toolbar-neo">
                     <div class="toolbar-actions">
                         <button id="btn-open-modal" class="neo-btn primary">
-                            <i class="ph-bold ph-plus"></i> Nuevo Activo
+                            <i class="ph-bold ph-plus"></i> Nuevo Registro
                         </button>
-                        <input type="file" id="excel-input" hidden accept=".xlsx, .xls">
+                        <input type="file" id="excel-input" hidden accept=".xlsx, .xls, .csv">
                         <button id="btn-import-excel" class="neo-btn warning small">
-                            <i class="ph-bold ph-upload-simple"></i> Carga Masiva
+                            <i class="ph-bold ph-upload-simple"></i> Importar Masivo
                         </button>
                     </div>
                     <div class="search-wrapper">
                         <i class="ph-bold ph-magnifying-glass search-icon"></i>
-                        <input type="text" id="search-input" class="neo-input" placeholder="Buscar por serial, código...">
+                        <input type="text" id="search-input" class="neo-input" placeholder="Buscar por serial, código, equipo...">
                     </div>
                 </div>
 
                 <div class="filter-bar">
-                    <span style="font-weight: bold; font-size: 0.9rem; color: var(--text-color);"><i class="ph-bold ph-funnel"></i> FILTROS:</span>
-                    <select id="filter-status" class="neo-input small" style="width: auto; padding: 8px;">
+                    <span style="font-weight: bold; font-size: 0.85rem; color: var(--text-muted);"><i class="ph-bold ph-funnel"></i> FILTRAR POR:</span>
+                    
+                    <select id="filter-status" class="neo-input small" style="width: auto;">
                         <option value="all">Estado: Todos</option>
-                        <option value="Bueno">Operativo</option>
-                        <option value="Malo">Dañado/Baja</option>
-                        <option value="Por revisar">En Revisión</option>
+                        <option value="Bueno">Bueno / Operativo</option>
+                        <option value="Malo">Malo / Baja</option>
+                        <option value="Por revisar">Por Revisar</option>
                     </select>
-                    <select id="filter-type" class="neo-input small" style="width: auto; padding: 8px;">
+
+                    <select id="filter-type" class="neo-input small" style="width: auto;">
                         <option value="all">Tipo: Todos</option>
                         <option value="SSD">SSD</option>
                         <option value="HDD">HDD</option>
                         <option value="NVMe">NVMe</option>
                     </select>
-                    <button id="btn-clear-filters" class="neo-btn ghost small" title="Limpiar Filtros">
+
+                    <select id="filter-brand" class="neo-input small" style="width: auto;">
+                        <option value="all">Marca: Todas</option>
+                        <option value="Samsung">Samsung</option>
+                        <option value="Kingston">Kingston</option>
+                        <option value="Western Digital">Western Digital</option>
+                        <option value="Seagate">Seagate</option>
+                        <option value="Toshiba">Toshiba</option>
+                        <option value="Adata">Adata</option>
+                    </select>
+
+                    <select id="filter-capacity" class="neo-input small" style="width: auto;">
+                        <option value="all">Capacidad: Todas</option>
+                        <option value="240">240-256 GB</option>
+                        <option value="480">480-512 GB</option>
+                        <option value="1000">1 TB (1000 GB)</option>
+                        <option value="2000">2 TB (2000 GB)</option>
+                    </select>
+
+                    <button id="btn-clear-filters" class="neo-btn ghost small" title="Limpiar todos los filtros">
                         <i class="ph-bold ph-eraser"></i>
                     </button>
                 </div>
@@ -185,8 +227,8 @@
             <span id="selected-count">0</span> seleccionados
         </div>
         <div class="fb-actions">
-            <button id="btn-bulk-excel" class="neo-btn success small" style="color: white;">Excel</button>
-            <button id="btn-bulk-pdf" class="neo-btn danger small">PDF</button>
+            <button id="btn-bulk-excel" class="neo-btn success small" style="color: white;">Exportar Excel</button>
+            <button id="btn-bulk-pdf" class="neo-btn danger small">Exportar PDF</button>
             <button id="btn-bulk-delete" class="neo-btn ghost small" style="color: var(--bg-color); border-color: var(--bg-color);">
                 <i class="ph-bold ph-trash"></i> Eliminar
             </button>
@@ -195,37 +237,37 @@
 
     <dialog id="disk-modal" class="neo-modal">
         <div class="modal-header">
-            <h2 id="modal-title">Registrar Activo</h2>
+            <h2 id="modal-title">Gestión de Activo</h2>
             <button class="close-btn"><i class="ph-bold ph-x"></i></button>
         </div>
         <form id="disk-form">
             <input type="hidden" id="disk-id" name="id">
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Código Interno</label>
+                    <label>Código Interno / Inventario</label>
                     <input type="text" id="internal-code" class="neo-input" required>
                 </div>
                 <div class="form-group">
-                    <label>ID Equipo (Host)</label>
+                    <label>ID Equipo (Ubicación)</label>
                     <input type="text" id="host-id" class="neo-input">
                 </div>
                 <div class="form-group">
-                    <label>Tipo de Unidad</label>
+                    <label>Tipo de Disco</label>
                     <select id="disk-type" class="neo-input" required>
-                        <option value="SSD">SSD (Sólido)</option>
-                        <option value="HDD">HDD (Mecánico)</option>
+                        <option value="SSD">SSD</option>
+                        <option value="HDD">HDD</option>
                         <option value="NVMe">NVMe / M.2</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Capacidad (GB)</label>
-                    <input type="number" id="capacity" class="neo-input" required>
+                    <input type="number" id="capacity" class="neo-input" required placeholder="Ej: 500">
                 </div>
                 <div class="form-group">
-                    <label>Marca / Fabricante</label>
+                    <label>Marca</label>
                     <input type="text" id="brand" class="neo-input" required list="brands-list">
                     <datalist id="brands-list">
-                        <option value="Samsung"><option value="Kingston"><option value="Western Digital"><option value="Seagate"><option value="Kioxia">
+                        <option value="Samsung"><option value="Kingston"><option value="Western Digital"><option value="Seagate"><option value="Toshiba"><option value="Adata"><option value="Crucial">
                     </datalist>
                 </div>
                 <div class="form-group">
@@ -233,44 +275,44 @@
                     <input type="text" id="serial-number" class="neo-input" required>
                 </div>
                 <div class="form-group">
-                    <label>Estado Operativo</label>
+                    <label>Estado</label>
                     <select id="disk-status" class="neo-input" required>
-                        <option value="Bueno">Operativo</option>
-                        <option value="Malo">Dañado / Baja</option>
-                        <option value="Por revisar">En Revisión</option>
+                        <option value="Bueno">Bueno</option>
+                        <option value="Malo">Malo</option>
+                        <option value="Por revisar">Por Revisar</option>
                     </select>
                 </div>
                 <div class="form-group"><label>Fecha Compra</label><input type="date" id="purchase-date" class="neo-input"></div>
                 <div class="form-group"><label>Fecha Instalación</label><input type="date" id="install-date" class="neo-input"></div>
                 <div class="form-group full-width">
-                    <label>Observaciones / Notas</label>
+                    <label>Observaciones</label>
                     <textarea id="observations" class="neo-input" rows="2"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" id="btn-cancel" class="neo-btn ghost">Cancelar</button>
-                <button type="submit" class="neo-btn primary">Guardar Registro</button>
+                <button type="submit" class="neo-btn primary">Guardar Cambios</button>
             </div>
         </form>
     </dialog>
 
     <dialog id="details-modal" class="neo-modal">
         <div class="modal-header">
-            <h2>Detalles del Activo</h2>
+            <h2>Ficha Técnica del Disco</h2>
             <button class="close-btn"><i class="ph-bold ph-x"></i></button>
         </div>
         <div class="modal-body">
             <div id="detail-content" class="detail-grid"></div>
         </div>
         <div class="modal-footer">
-            <button id="btn-detail-delete" class="neo-btn danger">Dar de Baja</button>
+            <button id="btn-detail-delete" class="neo-btn danger">Eliminar</button>
             <button id="btn-detail-edit" class="neo-btn primary">Editar</button>
         </div>
     </dialog>
 
     <dialog id="import-modal" class="neo-modal" style="max-width: 800px;">
         <div class="modal-header">
-            <h2>Previsualización de Carga Masiva</h2>
+            <h2>Validar Importación Masiva</h2>
             <button class="close-btn btn-close-import"><i class="ph-bold ph-x"></i></button>
         </div>
         <div class="modal-body" style="max-height: 50vh; overflow-y: auto;">
@@ -281,7 +323,7 @@
         </div>
         <div class="modal-footer">
             <span id="import-count" style="margin-right: auto; font-weight: bold;">0 seleccionados</span>
-            <button id="btn-save-import" class="neo-btn success" style="color: white;">Confirmar Carga</button>
+            <button id="btn-save-import" class="neo-btn success" style="color: white;">Confirmar Importación</button>
         </div>
     </dialog>
 
