@@ -1,29 +1,55 @@
 /* css/main.css */
 
 :root {
-    /* --- PALETA DE COLORES NEO-BRUTALISM --- */
-    --bg-color: #f0f0f0;         /* Gris muy claro de fondo */
-    --surface-color: #ffffff;    /* Blanco puro para tarjetas */
-    --text-color: #000000;       /* Negro puro */
-    --border-color: #000000;
+    /* --- PALETA CORPORATIVA (MODO CLARO) --- */
+    --bg-color: #f1f5f9;         /* Gris azulado muy claro (Slate 100) */
+    --surface-color: #ffffff;    /* Blanco puro */
+    --text-color: #0f172a;       /* Azul marino muy oscuro (Slate 900) */
+    --text-muted: #64748b;       /* Gris medio para subtítulos */
+    --border-color: #0f172a;     /* El borde es del color del texto (Casi negro) */
     
-    /* Colores de Estado (Vibrantes pero planos) */
-    --primary: #9dff00;          /* Verde neón */
-    --secondary: #d4d4d4;        /* Gris botón secundario */
-    --accent-blue: #a3d5ff;      /* Azul pastel fuerte */
-    --danger: #ff6b6b;           /* Rojo coral */
-    --warning: #ffdd57;          /* Amarillo */
+    /* Colores de Acción (Elegant Neo) */
+    --primary: #2563eb;          /* Azul Royal Vibrante */
+    --primary-hover: #1d4ed8;    
+    --secondary: #e2e8f0;        /* Gris claro para fondos secundarios */
     
-    /* --- CONFIGURACIÓN DE BORDES Y SOMBRAS --- */
-    --border-width: 2px;
-    --border-radius-lg: 12px;    /* Para tarjetas */
-    --border-radius-pill: 10em;  /* Para botones (tu preferencia) */
+    /* Estados */
+    --success: #06b6d4;          /* Cian/Turquesa (Éxito moderno) */
+    --warning: #f97316;          /* Naranja Quemado (Advertencia) */
+    --danger: #ef4444;           /* Rojo Suave */
     
-    /* Tu sombra personalizada */
-    --shadow-hard: 4px 4px 0 0 #000000;
-    --shadow-hover: 6px 6px 0 0 #000000; 
+    /* Acentos */
+    --accent-blue: #dbeafe;      /* Azul muy pálido para headers de tablas/modales */
+    
+    /* --- CONFIGURACIÓN DE ESTILO --- */
+    --border-width: 2px;         /* Borde un poco más fino que antes (más elegante) */
+    --border-radius-lg: 8px;     /* Bordes menos redondos (más corporativo) */
+    --border-radius-pill: 50px;  /* Para botones sigue siendo redondo */
+    
+    /* Sombra Dura (La firma del estilo) */
+    --shadow-color: #0f172a;     
+    --shadow-hard: 4px 4px 0 0 var(--shadow-color);
+    --shadow-hover: 6px 6px 0 0 var(--shadow-color); 
 }
 
+/* --- MODO OSCURO (Overrides) --- */
+[data-theme="dark"] {
+    --bg-color: #0f172a;         /* Fondo Azul Marino Profundo */
+    --surface-color: #1e293b;    /* Cartas en Azul Grisáceo Oscuro */
+    --text-color: #f8fafc;       /* Texto Blanco Hueso */
+    --text-muted: #94a3b8;
+    --border-color: #f8fafc;     /* Bordes Blancos para contraste */
+    
+    --primary: #3b82f6;          /* Azul más brillante para resaltar en oscuro */
+    --primary-hover: #60a5fa;
+    --secondary: #334155;
+    
+    --accent-blue: #334155;      /* Header de tablas oscuro */
+    
+    --shadow-color: #000000;     /* Sombra negra pura para profundidad */
+}
+
+/* --- RESET BÁSICO --- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -31,11 +57,12 @@
 }
 
 body {
-    font-family: 'Space Grotesk', sans-serif; /* Fuente moderna */
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
     line-height: 1.5;
     padding: 2rem;
+    transition: background-color 0.3s ease, color 0.3s ease; /* Transición suave de tema */
 }
 
 /* --- LAYOUT PRINCIPAL --- */
@@ -47,16 +74,17 @@ body {
     gap: 2rem;
 }
 
-/* HEADER */
+/* --- HEADER --- */
 .neo-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: var(--surface-color);
     border: var(--border-width) solid var(--border-color);
-    padding: 1.5rem 2rem;
+    padding: 1rem 2rem;
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-hard);
+    transition: all 0.3s ease;
 }
 
 .brand {
@@ -64,56 +92,97 @@ body {
     align-items: center;
     gap: 1rem;
     font-size: 1.5rem;
+    color: var(--text-color);
 }
 
 .brand i {
     font-size: 2rem;
+    color: var(--primary); /* El icono usa el color corporativo */
 }
 
+.brand h1 {
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+/* Grupo derecho del header */
+.header-right-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Botón de Tema (Luna/Sol) */
+.icon-only {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    border-radius: 50%; /* Perfectamente redondo */
+}
+
+/* Badge de Estado del Sistema */
 .user-status {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     font-weight: 600;
-    font-size: 0.9rem;
-    border: 2px solid black;
+    font-size: 0.85rem;
+    border: var(--border-width) solid var(--border-color);
     padding: 0.5rem 1rem;
     border-radius: var(--border-radius-pill);
-    background: var(--primary);
+    background: var(--surface-color);
+    white-space: nowrap;
 }
 
 .status-indicator {
     width: 10px;
     height: 10px;
-    background: black;
     border-radius: 50%;
-    animation: blink 2s infinite;
+    border: 1px solid var(--border-color);
 }
 
-@keyframes blink {
-    0% { opacity: 1; }
-    50% { opacity: 0.4; }
-    100% { opacity: 1; }
+.status-indicator.online {
+    background: var(--success);
+    box-shadow: 0 0 5px var(--success);
 }
 
-/* SECCIONES Y GRID */
-.analytics-section {
-    padding: 2rem;
+/* --- SECCIONES GENERALES --- */
+.analytics-section, .inventory-section {
+    width: 100%;
 }
 
-.charts-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr; /* El gráfico ocupa más que el KPI */
-    gap: 2rem;
-    margin-top: 1rem;
+/* Títulos de Sección */
+h2, h3 {
+    color: var(--text-color);
+    font-weight: 700;
 }
 
+.section-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-header i {
+    color: var(--primary);
+}
+
+/* Ajustes Responsivos */
 @media (max-width: 768px) {
-    .charts-grid {
-        grid-template-columns: 1fr;
-    }
+    body { padding: 1rem; }
+    
     .neo-header {
         flex-direction: column;
         gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .header-right-group {
+        width: 100%;
+        justify-content: space-between;
     }
 }

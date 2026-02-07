@@ -1,17 +1,17 @@
 /* css/components.css */
 
-/* --- 1. BOTONES NEO-BRUTALISM --- */
+/* --- 1. BOTONES NEO-BRUTALISM (CORPORATIVOS) --- */
 .neo-btn {
-    background-color: white;
-    color: black;
+    background-color: var(--surface-color);
+    color: var(--text-color);
     border-radius: var(--border-radius-pill);
-    font-size: 15px;
-    font-weight: 700;
-    padding: 0.8em 1.5em;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.7em 1.5em;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
-    border: 2px solid black;
-    box-shadow: 0 0 0 0 black;
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: 0 0 0 0 var(--shadow-color); /* Sombra inicial invisible */
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -20,39 +20,56 @@
     text-decoration: none;
 }
 
-/* Hover: Se levanta + Sombra Dura */
+/* Hover: Elevación + Sombra Dura */
 .neo-btn:hover {
-    transform: translateY(-4px) translateX(-2px);
-    box-shadow: 4px 4px 0 0 black;
+    transform: translateY(-3px) translateX(-2px);
+    box-shadow: var(--shadow-hard); /* Usa la variable de sombra dinámica */
+    background-color: var(--bg-color); /* Ligero cambio de fondo */
 }
 
-/* Active: Se hunde */
+/* Active: Click */
 .neo-btn:active {
-    transform: translateY(2px) translateX(1px);
-    box-shadow: 0 0 0 0 black;
+    transform: translateY(1px) translateX(0px);
+    box-shadow: 0 0 0 0 var(--shadow-color);
 }
 
-/* Variantes */
-.neo-btn.primary { background-color: var(--primary); }  /* Verde Neón */
-.neo-btn.danger { background-color: var(--danger); color: white; } /* Rojo */
-.neo-btn.success { background-color: #4CAF50; color: white; } /* Verde Excel */
-.neo-btn.warning { background-color: var(--warning); } /* Amarillo */
-.neo-btn.ghost { background-color: transparent; border: 2px dashed black; }
+/* Variantes de Color */
+.neo-btn.primary {
+    background-color: var(--primary);
+    color: white; /* Siempre blanco para contraste */
+    border-color: var(--border-color);
+}
+.neo-btn.primary:hover { background-color: var(--primary-hover); }
+
+.neo-btn.danger { background-color: var(--danger); color: white; }
+.neo-btn.success { background-color: var(--success); color: white; }
+.neo-btn.warning { background-color: var(--warning); color: white; }
+
+.neo-btn.ghost {
+    background-color: transparent;
+    border: 2px dashed var(--border-color);
+    color: var(--text-color);
+    box-shadow: none !important;
+}
+.neo-btn.ghost:hover {
+    background-color: var(--accent-blue);
+    border-style: solid;
+}
 
 .neo-btn.small {
     padding: 0.4em 0.8em;
-    font-size: 12px;
-    min-height: 32px;
+    font-size: 0.75rem;
 }
 
 .neo-btn:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
+    filter: grayscale(1);
     transform: none !important;
     box-shadow: none !important;
 }
 
-/* --- 2. TARJETAS Y LAYOUT --- */
+/* --- 2. TARJETAS (CARDS) --- */
 .neo-card {
     background: var(--surface-color);
     border: var(--border-width) solid var(--border-color);
@@ -60,43 +77,38 @@
     box-shadow: var(--shadow-hard);
     margin-bottom: 2rem;
     overflow: hidden;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-.neo-card.no-padding {
-    padding: 0;
-}
+.neo-card.no-padding { padding: 0; }
 
-/* Layout de Analíticas (Dashboard) */
+/* Wrapper de Analíticas */
 .analytics-wrapper {
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: 2rem;
     margin-bottom: 2rem;
 }
+@media (max-width: 768px) { .analytics-wrapper { grid-template-columns: 1fr; } }
 
-@media (max-width: 768px) {
-    .analytics-wrapper {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* --- 3. INPUTS --- */
+/* --- 3. INPUTS Y FORMULARIOS --- */
 .neo-input {
     width: 100%;
-    padding: 12px 15px;
+    padding: 10px 15px;
     font-family: inherit;
     font-weight: 500;
-    border: 2px solid black;
-    border-radius: 8px;
-    background: #f9f9f9;
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    background: var(--bg-color); /* Fondo grisáceo claro u oscuro */
+    color: var(--text-color);
     outline: none;
     transition: 0.2s;
 }
 
 .neo-input:focus {
-    background: white;
-    box-shadow: 4px 4px 0 0 black;
-    transform: translate(-2px, -2px);
+    background: var(--surface-color);
+    border-color: var(--primary);
+    box-shadow: 4px 4px 0 0 var(--border-color);
 }
 
 .search-wrapper {
@@ -110,26 +122,37 @@
     right: 15px;
     top: 50%;
     transform: translateY(-50%);
+    color: var(--text-muted);
     pointer-events: none;
-    font-size: 1.2rem;
 }
 
-/* --- 4. TABLAS E INTERACCIÓN --- */
+/* Labels */
+.form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+.form-group label {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* --- 4. TABLAS --- */
 .table-container {
     overflow-x: auto;
     border-radius: var(--border-radius-lg);
-    border: 2px solid black;
+    border: var(--border-width) solid var(--border-color);
 }
 
 .neo-table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
+    background: var(--surface-color);
+    color: var(--text-color);
 }
 
 .neo-table thead {
-    background: black;
-    color: white;
+    background: var(--accent-blue); /* Header azul suave o gris oscuro */
+    color: var(--text-color);
+    border-bottom: var(--border-width) solid var(--border-color);
 }
 
 .neo-table th {
@@ -137,122 +160,100 @@
     padding: 1rem;
     font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.85rem;
-    letter-spacing: 1px;
+    font-size: 0.8rem;
     white-space: nowrap;
 }
 
 .neo-table td {
     padding: 1rem;
-    border-bottom: 1px solid #000;
+    border-bottom: 1px solid var(--border-color);
     font-size: 0.95rem;
     vertical-align: middle;
 }
+.neo-table tr:last-child td { border-bottom: none; }
 
-/* Filas Interactivas (Hover Effect) */
+/* Filas Interactivas */
 .interactive-row {
     cursor: pointer;
-    transition: background-color 0.15s ease-in-out;
+    transition: background-color 0.15s ease;
 }
-
 .interactive-row:hover {
-    background-color: var(--accent-blue) !important;
-    outline: 2px solid black;
+    background-color: var(--bg-color) !important;
+    outline: 2px solid var(--primary); /* Borde azul al hacer hover */
     position: relative;
     z-index: 10;
 }
 
-/* Etiquetas de Estado */
+/* Badges de Estado */
 .status-badge {
     padding: 4px 12px;
     border-radius: 50px;
-    border: 1px solid black;
     font-weight: 700;
     font-size: 0.75rem;
     text-transform: uppercase;
     display: inline-block;
-    white-space: nowrap;
+    border: 1px solid var(--border-color);
 }
-.status-badge.bueno { background: var(--primary); color: black; }
-.status-badge.malo { background: var(--danger); color: white; }
-.status-badge.revisar { background: var(--warning); color: black; }
+.status-badge.bueno { background: var(--success); color: white; border-color: transparent; }
+.status-badge.malo { background: var(--danger); color: white; border-color: transparent; }
+.status-badge.revisar { background: var(--warning); color: white; border-color: transparent; }
 
-/* --- 5. MODALES (VENTANAS) --- */
+/* --- 5. MODALES --- */
 .neo-modal {
     margin: auto;
     padding: 0;
-    border: 3px solid black;
+    border: var(--border-width) solid var(--border-color);
     border-radius: 16px;
-    box-shadow: 10px 10px 0 0 black;
+    box-shadow: 10px 10px 0 0 var(--shadow-color); /* Sombra profunda */
     max-width: 600px;
     width: 90%;
-    background: white;
+    background: var(--surface-color);
+    color: var(--text-color);
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.3s, transform 0.3s;
 }
 
-.neo-modal[open] {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.neo-modal::backdrop {
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-}
+.neo-modal[open] { opacity: 1; transform: translateY(0); }
+.neo-modal::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); }
 
 .modal-header {
     background: var(--accent-blue);
     padding: 1.5rem;
-    border-bottom: 2px solid black;
+    border-bottom: var(--border-width) solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
-
-.modal-header h2 {
-    margin: 0;
-    font-size: 1.5rem;
-}
+.modal-header h2 { margin: 0; font-size: 1.25rem; color: var(--text-color); }
 
 .close-btn {
     background: transparent;
     border: none;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     cursor: pointer;
+    color: var(--text-color);
     transition: transform 0.2s;
 }
+.close-btn:hover { transform: rotate(90deg); color: var(--danger); }
 
-.close-btn:hover { transform: scale(1.2); }
-
-.modal-body { padding: 2rem; }
+.modal-body { padding: 2rem; background: var(--surface-color); }
 
 .modal-footer {
     padding: 1.5rem 2rem;
-    background: #f4f4f4;
-    border-top: 2px solid black;
+    background: var(--bg-color);
+    border-top: var(--border-width) solid var(--border-color);
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
 }
 
-/* Grids Internos */
-.form-grid, .detail-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-}
-
+/* Grids */
+.form-grid, .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
 .full-width, .detail-item.full { grid-column: span 2; }
+@media (max-width: 600px) { .form-grid, .detail-grid { grid-template-columns: 1fr; } }
 
-@media (max-width: 600px) {
-    .form-grid, .detail-grid { grid-template-columns: 1fr; }
-    .toolbar-neo { flex-direction: column; }
-    .search-wrapper { max-width: 100%; }
-}
-
-/* --- 6. BARRA SUPERIOR (TOOLBAR) --- */
+/* --- 6. TOOLBAR --- */
 .toolbar-neo {
     display: flex;
     justify-content: space-between;
@@ -261,78 +262,48 @@
     flex-wrap: wrap;
     gap: 1rem;
 }
+.toolbar-actions { display: flex; gap: 0.8rem; flex-wrap: wrap; }
 
-.toolbar-actions {
-    display: flex;
-    gap: 0.8rem;
-    flex-wrap: wrap;
-}
-
-.export-group {
-    display: flex;
-    gap: 0.5rem;
-    margin-left: 1rem;
-    border-left: 2px solid black;
-    padding-left: 1rem;
-}
-
-/* --- 7. PANTALLA DE LOGIN (IMPORTANTE: Muro Completo) --- */
+/* --- 7. LOGIN SCREEN --- */
 .login-overlay {
-    position: fixed; /* Fija la posición relativa a la ventana */
-    top: 0;
-    left: 0;
-    width: 100vw; /* Ancho completo */
-    height: 100vh; /* Alto completo */
-    background-color: var(--bg-color); /* Cubre todo el fondo */
-    z-index: 9999; /* Siempre encima */
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background-color: var(--bg-color);
+    z-index: 9999;
     display: flex;
     justify-content: center;
     align-items: center;
 }
-
 .login-card {
     text-align: center;
     padding: 3rem;
     max-width: 400px;
     width: 90%;
-    background: white;
-    border: 3px solid black;
-    box-shadow: 8px 8px 0 0 black;
+    background: var(--surface-color);
+    border: 3px solid var(--border-color);
+    box-shadow: 8px 8px 0 0 var(--shadow-color);
+}
+.login-icon i { font-size: 4rem; margin-bottom: 1rem; color: var(--primary); }
+
+/* --- 8. BARRA FLOTANTE (ESTILO OSCURO INVERTIDO) --- */
+.floating-bar {
+    /* En modo claro: Fondo negro, texto blanco. En modo oscuro: Fondo blanco, texto negro */
+    background: var(--text-color) !important; 
+    color: var(--bg-color) !important;
+    border: 2px solid var(--border-color);
 }
 
-.login-icon i {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    display: block;
-}
-
-/* Perfil de Usuario en Header */
+/* User Profile */
 .user-controls {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: white;
-    padding: 0.5rem 1rem;
-    border: 2px solid black;
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--surface-color);
+    padding: 0.4rem 1rem;
+    border: var(--border-width) solid var(--border-color);
     border-radius: 50px;
 }
-
 .avatar {
-    width: 32px;
-    height: 32px;
+    width: 32px; height: 32px;
     border-radius: 50%;
-    border: 2px solid black;
-    object-fit: cover;
-}
-
-/* Estado Vacío de Tabla */
-.empty-state-container {
-    text-align: center;
-    padding: 3rem;
-    color: #666;
-}
-.empty-state-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
+    border: 2px solid var(--border-color);
 }
