@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disk Manager | Neo-Brutalism</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        /* Separamos las tarjetas visualmente */
+        .analytics-wrapper {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        @media (max-width: 768px) {
+            .analytics-wrapper { grid-template-columns: 1fr; }
+        }
+        /* Ajuste para que el gráfico llene su tarjeta */
+        .chart-card-content {
+            height: 250px;
+            position: relative;
+        }
+        /* Estilo para cuando no hay datos en la tabla */
+        .empty-state-container {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #666;
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+    <section id="login-screen" class="login-overlay">
+        <div class="login-card neo-card">
+            <div class="login-icon">
+                <i class="ph-bold ph-lock-key"></i>
+            </div>
+            <h1>Acceso Restringido</h1>
+            <p>Sistema de gestión de inventario privado.</p>
+            <button id="btn-login" class="neo-btn primary">
+                <i class="ph-bold ph-google-logo"></i> Entrar con Google
+            </button>
+        </div>
+    </section>
+
+    <div class="layout-wrapper">
+        
+        <header class="neo-header">
+            <div class="brand">
+                <i class="ph-bold ph-hard-drives"></i>
+                <h1>Disk Manager</h1>
+            </div>
+            
+            <div class="user-controls" id="user-controls" style="display: none;">
+                <div class="user-info">
+                    <img id="user-avatar" src="" alt="User" class="avatar">
+                    <span id="user-name">Usuario</span>
+                </div>
+                <button id="btn-logout" class="neo-btn small danger">
+                    <i class="ph-bold ph-sign-out"></i>
+                </button>
+            </div>
+
+            <div class="user-status" id="system-status-badge">
+                <span class="status-indicator online"></span>
+                <p>Sistema Activo</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            
+            <section class="analytics-wrapper">
+                <div class="neo-card" style="padding: 1.5rem;">
+                    <div class="section-header">
+                        <h3><i class="ph-bold ph-chart-pie-slice"></i> Discos por Marca</h3>
+                    </div>
+                    <div class="canvas-container chart-card-content">
+                        <canvas id="brandChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="neo-card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                    <h3>Total Inventariado</h3>
+                    <div style="margin: 1.5rem 0;">
+                        <span id="total-disks-display" style="font-size: 4rem; font-weight: 700; line-height: 1;">0</span>
+                    </div>
+                    <span class="status-badge revisar" style="font-size: 0.9rem;">Unidades físicas</span>
+                </div>
+            </section>
+
+            <section class="inventory-section">
+                
+                <div class="toolbar-neo">
+                    <div class="toolbar-actions">
+                        <button id="btn-open-modal" class="neo-btn primary">
+                            <i class="ph-bold ph-plus"></i> Añadir Disco
+                        </button>
+                        
+                        <input type="file" id="excel-input" hidden accept=".xlsx, .xls">
+                        
+                        <button id="btn-import-excel" class="neo-btn warning small" title="Subir Excel">
+                            <i class="ph-bold ph-upload-simple"></i> Importar
+                        </button>
+
+                        <div class="export-group">
+                            <button id="btn-export-excel" class="neo-btn success small" title="Descargar Excel">
+                                <i class="ph-bold ph-file-xls"></i> Excel
+                            </button>
+                            <button id="btn-export-pdf" class="neo-btn danger small" title="Descargar PDF">
+                                <i class="ph-bold ph-file-pdf"></i> PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="search-wrapper">
+                        <i class="ph-bold ph-magnifying-glass search-icon"></i>
+                        <input type="text" id="search-input" class="neo-input" placeholder="Buscar serie, código o marca...">
+                    </div>
+                </div>
+
+                <div class="table-container neo-card no-padding">
+                    <table id="inventory-table" class="neo-table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Equipo</th>
+                                <th>Tipo</th>
+                                <th>Marca</th>
+                                <th>Capacidad</th>
+                                <th>N° Serie</th>
+                                <th>Estado</th>
+                                <th style="text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr>
+                                <td colspan="8">
+                                    <div class="empty-state-container">
+                                        <i class="ph-bold ph-ghost empty-state-icon"></i>
+                                        <p>No hay discos registrados todavía.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <dialog id="disk-modal" class="neo-modal">
+        <div class="modal-header">
+            <h2 id="modal-title">Registrar Nuevo Disco</h2>
+            <button id="btn-close-modal" class="close-btn"><i class="ph-bold ph-x"></i></button>
+        </div>
+        <form id="disk-form">
+            <input type="hidden" id="disk-id" name="id">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Código Interno</label>
+                    <input type="text" id="internal-code" class="neo-input" required placeholder="Ej: DISK-001">
+                </div>
+                <div class="form-group">
+                    <label>ID Equipo (Host)</label>
+                    <input type="text" id="host-id" class="neo-input" placeholder="Ej: SRV-FINANZAS">
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <div class="select-wrapper">
+                        <select id="disk-type" class="neo-input" required>
+                            <option value="SSD">SSD</option>
+                            <option value="HDD">HDD</option>
+                            <option value="NVMe">NVMe / M.2</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Capacidad (GB)</label>
+                    <input type="number" id="capacity" class="neo-input" required placeholder="Ej: 500">
+                </div>
+                <div class="form-group">
+                    <label>Marca</label>
+                    <input type="text" id="brand" class="neo-input" required list="brands-list">
+                    <datalist id="brands-list">
+                        <option value="Samsung"><option value="Kingston"><option value="Western Digital"><option value="Seagate"><option value="Crucial">
+                    </datalist>
+                </div>
+                <div class="form-group">
+                    <label>Número de Serie</label>
+                    <input type="text" id="serial-number" class="neo-input" required placeholder="S/N Fabricante">
+                </div>
+                <div class="form-group">
+                    <label>Estado</label>
+                    <select id="disk-status" class="neo-input" required>
+                        <option value="Bueno">Bueno</option>
+                        <option value="Malo">Malo</option>
+                        <option value="Por revisar">Por Revisar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha Compra</label>
+                    <input type="date" id="purchase-date" class="neo-input">
+                </div>
+                <div class="form-group">
+                    <label>Fecha Instalación</label>
+                    <input type="date" id="install-date" class="neo-input">
+                </div>
+                <div class="form-group full-width">
+                    <label>Observaciones</label>
+                    <textarea id="observations" class="neo-input" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn-cancel" class="neo-btn ghost">Cancelar</button>
+                <button type="submit" class="neo-btn primary">Guardar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="details-modal" class="neo-modal">
+        <div class="modal-header">
+            <h2>Detalles del Disco</h2>
+            <button class="close-btn btn-close-details"><i class="ph-bold ph-x"></i></button>
+        </div>
+        <div class="modal-body" style="padding: 2rem;">
+            <div id="detail-content" class="detail-grid">
+                </div>
+        </div>
+        <div class="modal-footer">
+            <button id="btn-detail-delete" class="neo-btn danger">Eliminar Disco</button>
+            <button id="btn-detail-edit" class="neo-btn primary">Editar Información</button>
+        </div>
+    </dialog>
+
+    <dialog id="import-modal" class="neo-modal" style="max-width: 800px; width: 90%;">
+        <div class="modal-header">
+            <h2>Seleccionar Discos a Importar</h2>
+            <button class="close-btn btn-close-import"><i class="ph-bold ph-x"></i></button>
+        </div>
+        <div class="modal-body" style="padding: 1rem; max-height: 60vh; overflow-y: auto;">
+            <table class="neo-table" id="import-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">
+                            <input type="checkbox" id="select-all-import" style="transform: scale(1.5); cursor: pointer;">
+                        </th>
+                        <th>Código</th>
+                        <th>Marca</th>
+                        <th>Serie</th>
+                        <th>Capacidad</th>
+                    </tr>
+                </thead>
+                <tbody id="import-table-body">
+                    </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <div style="margin-right: auto; font-weight: bold;">
+                Seleccionados: <span id="import-count">0</span>
+            </div>
+            <button id="btn-cancel-import" class="neo-btn ghost">Cancelar</button>
+            <button id="btn-save-import" class="neo-btn success">Guardar Selección</button>
+        </div>
+    </dialog>
+
+    <div id="modal-overlay" class="modal-overlay"></div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

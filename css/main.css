@@ -1,0 +1,119 @@
+/* css/main.css */
+
+:root {
+    /* --- PALETA DE COLORES NEO-BRUTALISM --- */
+    --bg-color: #f0f0f0;         /* Gris muy claro de fondo */
+    --surface-color: #ffffff;    /* Blanco puro para tarjetas */
+    --text-color: #000000;       /* Negro puro */
+    --border-color: #000000;
+    
+    /* Colores de Estado (Vibrantes pero planos) */
+    --primary: #9dff00;          /* Verde neón */
+    --secondary: #d4d4d4;        /* Gris botón secundario */
+    --accent-blue: #a3d5ff;      /* Azul pastel fuerte */
+    --danger: #ff6b6b;           /* Rojo coral */
+    --warning: #ffdd57;          /* Amarillo */
+    
+    /* --- CONFIGURACIÓN DE BORDES Y SOMBRAS --- */
+    --border-width: 2px;
+    --border-radius-lg: 12px;    /* Para tarjetas */
+    --border-radius-pill: 10em;  /* Para botones (tu preferencia) */
+    
+    /* Tu sombra personalizada */
+    --shadow-hard: 4px 4px 0 0 #000000;
+    --shadow-hover: 6px 6px 0 0 #000000; 
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Space Grotesk', sans-serif; /* Fuente moderna */
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.5;
+    padding: 2rem;
+}
+
+/* --- LAYOUT PRINCIPAL --- */
+.layout-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* HEADER */
+.neo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface-color);
+    border: var(--border-width) solid var(--border-color);
+    padding: 1.5rem 2rem;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-hard);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.5rem;
+}
+
+.brand i {
+    font-size: 2rem;
+}
+
+.user-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: 2px solid black;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-pill);
+    background: var(--primary);
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    background: black;
+    border-radius: 50%;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+
+/* SECCIONES Y GRID */
+.analytics-section {
+    padding: 2rem;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* El gráfico ocupa más que el KPI */
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    .neo-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
