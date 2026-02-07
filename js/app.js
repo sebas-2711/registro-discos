@@ -30,6 +30,8 @@ const excelInput = document.getElementById("excel-input");
 const searchInput = document.getElementById("search-input");
 const filterStatus = document.getElementById("filter-status");
 const filterType = document.getElementById("filter-type");
+const filterBrand = document.getElementById("filter-brand");     // Nuevo
+const filterCapacity = document.getElementById("filter-capacity"); // Nuevo
 const btnClearFilters = document.getElementById("btn-clear-filters");
 
 // Controles de Gráfico
@@ -42,9 +44,13 @@ const btnBulkDelete = document.getElementById("btn-bulk-delete");
 const btnBulkExcel = document.getElementById("btn-bulk-excel");
 const btnBulkPdf = document.getElementById("btn-bulk-pdf");
 
+// Botón Tema
+const btnTheme = document.getElementById("btn-theme-toggle");
+const themeIcon = document.getElementById("theme-icon");
+
 // --- VARIABLES DE ESTADO ---
-let currentInventory = [];  // Todos los datos crudos de Firebase
-let filteredInventory = []; // Los datos que se ven actualmente en pantalla
+let currentInventory = [];  
+let filteredInventory = []; 
 let currentDiskId = null;
 
 // =================================================================
@@ -52,6 +58,10 @@ let currentDiskId = null;
 // =================================================================
 document.addEventListener("DOMContentLoaded", () => {
     
+    // A. Cargar Tema Guardado
+    initTheme();
+
+    // B. Auth Observer
     subscribeToAuth((user) => {
         if (user) {
             // LOGIN EXITOSO
@@ -62,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
             userAvatar.src = user.photoURL;
             userName.textContent = user.displayName.split(" ")[0];
 
-            initAppLogic(); // Arrancar la app
+            initAppLogic(); 
         } else {
             // NO LOGUEADO
             loginScreen.style.display = "flex";
@@ -80,23 +90,24 @@ document.addEventListener("DOMContentLoaded", () => {
 function initAppLogic() {
     subscribeToInventory((data) => {
         currentInventory = data;
-        applyFilters(); // Esto actualiza la tabla y los gráficos
+        populateBrandFilter(data); // Llenar select de marcas dinámicamente
+        applyFilters(); 
     });
 }
 
 // =================================================================
-// 2. SISTEMA DE FILTRADO Y GRÁFICOS (EL CEREBRO VISUAL)
+// 2. SISTEMA DE FILTRADO (EL CEREBRO)
 // =================================================================
 
 function applyFilters() {
-    // 1. Obtener valores de los inputs
     const searchTerm = searchInput.value.toLowerCase();
     const statusVal = filterStatus.value;
     const typeVal = filterType.value;
+    const brandVal = filterBrand.value;
+    const capacityVal = filterCapacity.value;
 
-    // 2. Filtrar el array principal
     filteredInventory = currentInventory.filter(disk => {
-        // Filtro de Texto
+        // 1. Texto (Buscador)
         const matchText = (
             (disk.serial || '').toLowerCase().includes(searchTerm) ||
             (disk.codigoInterno || '').toLowerCase().includes(searchTerm) ||
@@ -104,107 +115,153 @@ function applyFilters() {
             (disk.equipoId || '').toLowerCase().includes(searchTerm)
         );
 
-        // Filtro de Estado
+        // 2. Selectores Exactos
         const matchStatus = statusVal === "all" || disk.estado === statusVal;
-
-        // Filtro de Tipo
         const matchType = typeVal === "all" || disk.tipo === typeVal;
+        
+        // 3. Marca (Case insensitive y flexible)
+        const matchBrand = brandVal === "all" || 
+                           (disk.marca || '').toLowerCase().includes(brandVal.toLowerCase());
 
-        return matchText && matchStatus && matchType;
+        // 4. Capacidad (Lógica de Rangos)
+        let matchCapacity = true;
+        if (capacityVal !== "all") {
+            const cap = Number(disk.capacidad);
+            if (capacityVal === "240") matchCapacity = (cap >= 230 && cap <= 260); // 240, 250, 256
+            else if (capacityVal === "480") matchCapacity = (cap >= 470 && cap <= 520); // 480, 500, 512
+            else if (capacityVal === "1000") matchCapacity = (cap >= 900 && cap <= 1100); // 1TB
+            else if (capacityVal === "2000") matchCapacity = (cap >= 1900 && cap <= 2100); // 2TB
+            else matchCapacity = (cap == Number(capacityVal));
+        }
+
+        return matchText && matchStatus && matchType && matchBrand && matchCapacity;
     });
 
-    // 3. Actualizar UI
     renderTable(filteredInventory);
     updateKpiCounter(filteredInventory.length);
-    
-    // 4. Actualizar Gráfico Dinámico con los datos filtrados
     updateChart();
 }
 
-// Función para redibujar el gráfico según selectores
+// Función auxiliar para llenar el select de marcas con las que existen
+function populateBrandFilter(data) {
+    const brands = new Set(data.map(d => d.marca).filter(Boolean));
+    // Guardamos la selección actual para no perderla al recargar
+    const currentVal = filterBrand.value;
+    
+    // Limpiamos opciones (dejando la primera "Todas")
+    while (filterBrand.options.length > 1) {
+        filterBrand.remove(1);
+    }
+
+    // Ordenamos y agregamos
+    Array.from(brands).sort().forEach(brand => {
+        const option = document.createElement("option");
+        option.value = brand;
+        option.textContent = brand;
+        filterBrand.appendChild(option);
+    });
+
+    // Restauramos selección si existe
+    if (Array.from(filterBrand.options).some(o => o.value === currentVal)) {
+        filterBrand.value = currentVal;
+    }
+}
+
+// Actualizar Gráfico
 function updateChart() {
     const groupBy = chartGroupBy.value;
     const metric = chartMetric.value;
     const type = chartType.value;
-
     renderDynamicChart(filteredInventory, groupBy, metric, type);
 }
 
-// LISTENERS DE FILTROS (Se activan al cambiar cualquier cosa)
-[searchInput, filterStatus, filterType].forEach(el => {
+// LISTENERS DE FILTROS
+[searchInput, filterStatus, filterType, filterBrand, filterCapacity].forEach(el => {
     el.addEventListener("input", applyFilters);
     el.addEventListener("change", applyFilters);
 });
 
-// LISTENERS DE GRÁFICO (Se activan al cambiar configuración del chart)
 [chartGroupBy, chartMetric, chartType].forEach(el => {
     el.addEventListener("change", updateChart);
 });
 
-// Botón Limpiar Filtros
 btnClearFilters.addEventListener("click", () => {
     searchInput.value = "";
     filterStatus.value = "all";
     filterType.value = "all";
+    filterBrand.value = "all";
+    filterCapacity.value = "all";
     applyFilters();
 });
 
 
 // =================================================================
-// 3. ACCIONES MASIVAS (BARRA FLOTANTE)
+// 3. MODO OSCURO (PERSISTENTE)
 // =================================================================
+function initTheme() {
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.body.setAttribute("data-theme", savedTheme);
+    updateThemeIcon(savedTheme);
+}
 
-// ELIMINAR SELECCIONADOS
+btnTheme.addEventListener("click", () => {
+    const current = document.body.getAttribute("data-theme");
+    const newTheme = current === "light" ? "dark" : "light";
+    document.body.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+    updateThemeIcon(newTheme);
+});
+
+function updateThemeIcon(theme) {
+    themeIcon.className = theme === "dark" ? "ph-bold ph-sun" : "ph-bold ph-moon";
+}
+
+
+// =================================================================
+// 4. ACCIONES MASIVAS
+// =================================================================
 btnBulkDelete.addEventListener("click", async () => {
     const ids = getSelectedIds();
     if (ids.length === 0) return;
-
-    if (confirm(`⚠ ¿Estás seguro de eliminar ${ids.length} discos seleccionados? Esta acción no tiene vuelta atrás.`)) {
-        const btnOriginalText = btnBulkDelete.innerHTML;
+    if (confirm(`⚠ ¿Eliminar ${ids.length} discos seleccionados?`)) {
+        const originalText = btnBulkDelete.innerHTML;
         btnBulkDelete.innerHTML = "Eliminando...";
         btnBulkDelete.disabled = true;
-
-        // Eliminar en paralelo (rápido)
-        const promises = ids.map(id => deleteDisk(id));
-        await Promise.all(promises);
-
-        clearSelection(); // Limpiar checkboxes y ocultar barra
-        btnBulkDelete.innerHTML = btnOriginalText;
-        btnBulkDelete.disabled = false;
         
-        alert("Discos eliminados correctamente.");
+        await Promise.all(ids.map(id => deleteDisk(id)));
+        
+        clearSelection();
+        btnBulkDelete.innerHTML = originalText;
+        btnBulkDelete.disabled = false;
+        alert("Discos eliminados.");
     }
 });
 
-// EXPORTAR SELECCIONADOS (EXCEL)
 btnBulkExcel.addEventListener("click", () => {
     const ids = getSelectedIds();
-    // Filtramos solo los objetos que coinciden con los IDs seleccionados
-    const selectedData = currentInventory.filter(d => ids.includes(d.id));
-    exportToExcel(selectedData);
+    const data = currentInventory.filter(d => ids.includes(d.id));
+    exportToExcel(data);
     clearSelection();
 });
 
-// EXPORTAR SELECCIONADOS (PDF)
 btnBulkPdf.addEventListener("click", () => {
     const ids = getSelectedIds();
-    const selectedData = currentInventory.filter(d => ids.includes(d.id));
-    exportToPdf(selectedData);
+    const data = currentInventory.filter(d => ids.includes(d.id));
+    exportToPdf(data);
     clearSelection();
 });
 
 
 // =================================================================
-// 4. GESTIÓN DE MODALES (Igual que antes)
+// 5. MODALES Y FORMULARIOS
 // =================================================================
-
 const closeModal = (modalToClose) => {
     modalToClose.close();
     overlay.style.display = "none";
     if(modalToClose === modal) {
         form.reset();
         document.getElementById("disk-id").value = "";
-        document.getElementById("modal-title").textContent = "Registrar Disco";
+        document.getElementById("modal-title").textContent = "Registrar Activo";
     }
 };
 
@@ -216,28 +273,24 @@ const showModal = (modalToShow) => {
 document.querySelectorAll(".close-btn, #btn-cancel, #btn-cancel-import").forEach(btn => {
     btn.addEventListener("click", (e) => closeModal(e.target.closest("dialog")));
 });
-
 overlay.addEventListener("click", () => document.querySelectorAll("dialog[open]").forEach(d => closeModal(d)));
 document.getElementById("btn-open-modal").addEventListener("click", () => showModal(modal));
 
 
-// =================================================================
-// 5. DETALLES Y EDICIÓN (Exposed to Window)
-// =================================================================
-
+// DETALLES Y EDICIÓN (Globales)
 window.openDetailModal = (disk) => {
     currentDiskId = disk.id;
     const content = document.getElementById("detail-content");
     content.innerHTML = `
         <div class="detail-item"><strong>Código:</strong> ${disk.codigoInterno}</div>
-        <div class="detail-item"><strong>Estado:</strong> ${disk.estado}</div>
+        <div class="detail-item"><strong>Estado:</strong> <span class="status-badge ${disk.estado === 'Bueno' ? 'bueno' : disk.estado === 'Malo' ? 'malo' : 'revisar'}">${disk.estado}</span></div>
         <div class="detail-item"><strong>Marca:</strong> ${disk.marca}</div>
         <div class="detail-item"><strong>Tipo:</strong> ${disk.tipo}</div>
         <div class="detail-item"><strong>Capacidad:</strong> ${disk.capacidad} GB</div>
         <div class="detail-item"><strong>N° Serie:</strong> ${disk.serial}</div>
-        <div class="detail-item full"><strong>Equipo:</strong> ${disk.equipoId}</div>
-        <div class="detail-item full" style="background:#f4f4f4; padding:10px; border:2px solid black; border-radius:8px;">
-            <strong>Observaciones:</strong><br>${disk.observaciones || 'Sin observaciones.'}
+        <div class="detail-item full"><strong>Ubicación:</strong> ${disk.equipoId}</div>
+        <div class="detail-item full" style="background:var(--bg-color); padding:10px; border:1px solid var(--border-color); border-radius:8px;">
+            <strong>Observaciones:</strong><br>${disk.observaciones || '---'}
         </div>
     `;
     showModal(detailModal);
@@ -257,7 +310,7 @@ window.openEditModal = (id) => {
     document.getElementById("purchase-date").value = disk.fechaCompra;
     document.getElementById("install-date").value = disk.fechaInstalacion;
     document.getElementById("observations").value = disk.observaciones;
-    document.getElementById("modal-title").textContent = "Editar Disco";
+    document.getElementById("modal-title").textContent = "Editar Activo";
     showModal(modal);
 }
 
@@ -267,21 +320,19 @@ document.getElementById("btn-detail-edit").addEventListener("click", () => {
 });
 
 document.getElementById("btn-detail-delete").addEventListener("click", async () => {
-    if(confirm("⚠ ¿Eliminar este disco?")) {
+    if(confirm("⚠ ¿Dar de baja este activo?")) {
         await deleteDisk(currentDiskId);
         closeModal(detailModal);
     }
 });
 
 
-// =================================================================
-// 6. GUARDAR FORMULARIO
-// =================================================================
+// GUARDAR FORMULARIO
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const diskId = document.getElementById("disk-id").value;
     const btn = form.querySelector("button[type='submit']");
-    btn.textContent = "Guardando...";
+    btn.textContent = "Procesando...";
     btn.disabled = true;
 
     const formData = {
@@ -303,14 +354,12 @@ form.addEventListener("submit", async (e) => {
         closeModal(modal);
     } catch (err) { alert(err.message); }
     
-    btn.textContent = "Guardar";
+    btn.textContent = "Guardar Cambios";
     btn.disabled = false;
 });
 
 
-// =================================================================
-// 7. IMPORTACIÓN EXCEL
-// =================================================================
+// IMPORTACIÓN
 document.getElementById("btn-import-excel").addEventListener("click", () => excelInput.click());
 excelInput.addEventListener("change", (e) => {
     handleFileSelect(e, (data) => {
@@ -325,11 +374,11 @@ document.getElementById("select-all-import").addEventListener("change", (e) => {
 });
 document.getElementById("btn-save-import").addEventListener("click", async () => {
     const btn = document.getElementById("btn-save-import");
-    btn.textContent = "Guardando...";
+    btn.textContent = "Cargando...";
     const count = await saveSelectedImport();
     if (count > 0) {
-        alert(`¡Importados ${count} discos!`);
+        alert(`¡Importación exitosa de ${count} registros!`);
         closeModal(importModal);
     }
-    btn.textContent = "Guardar Selección";
+    btn.textContent = "Confirmar Importación";
 });
