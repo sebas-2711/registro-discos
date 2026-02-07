@@ -1,159 +1,155 @@
 // js/ui/charts.js
 
-let chartInstance = null; // Guardamos la instancia para poder destruirla y redibujar
+/**
+ * MOTOR DE GRÁFICOS DINÁMICOS - COMFAMILIAR RISARALDA
+ * Adaptado a la paleta institucional y compatible con Modo Oscuro.
+ */
 
-// REFERENCIA AL CANVAS
-const ctx = document.getElementById('mainChart').getContext('2d');
+let chartInstance = null;
+const canvas = document.getElementById('mainChart');
 
 /**
- * Función Principal: Renderiza el gráfico según la configuración
- * @param {Array} data - Lista completa de discos (filtrados o total)
- * @param {String} groupBy - Campo por el cual agrupar ('marca', 'estado', 'tipo', 'equipoId')
- * @param {String} metric - Qué medir ('count' = cantidad, 'capacity' = suma de GB)
- * @param {String} chartType - Tipo de gráfico ('doughnut', 'bar', 'pie')
+ * Renderiza o actualiza el gráfico principal
+ * @param {Array} data - Datos filtrados del inventario
+ * @param {String} groupBy - Campo de agrupación (marca, estado, tipo, equipoId)
+ * @param {String} metric - Métrica a mostrar (count, capacity)
+ * @param {String} chartType - Tipo de visualización (doughnut, bar, pie)
  */
-export function renderDynamicChart(data, groupBy = 'marca', metric = 'count', chartType = 'doughnut') {
-    
-    // 1. PROCESAR DATOS
-    // Convertimos la lista de objetos en un mapa de frecuencias o sumas
-    const processedData = processData(data, groupBy, metric);
-    
-    // Extraer etiquetas (labels) y valores (data)
-    const labels = Object.keys(processedData);
-    const values = Object.values(processedData);
+export function renderDynamicChart(data, groupBy = 'estado', metric = 'count', chartType = 'doughnut') {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
-    // 2. CONFIGURAR COLORES (Paleta Neo-Brutalism)
-    const colors = [
-        '#9dff00', // Verde Neón
-        '#a3d5ff', // Azul Pastel
-        '#ff6b6b', // Rojo Coral
-        '#ffdd57', // Amarillo
-        '#d4d4d4', // Gris
-        '#000000', // Negro
-        '#ff9f43', // Naranja
-        '#54a0ff'  // Azul Fuerte
+    // 1. Obtener estilos actuales del sistema (para Modo Oscuro)
+    const style = getComputedStyle(document.body);
+    const textColor = style.getPropertyValue('--text-color').trim() || '#1e293b';
+    const borderColor = style.getPropertyValue('--border-color').trim() || '#0f172a';
+    const primaryColor = style.getPropertyValue('--primary').trim() || '#0056b3';
+
+    // 2. Procesar la información
+    const processed = processChartData(data, groupBy, metric);
+    const labels = Object.keys(processed);
+    const values = Object.values(processed);
+
+    // 3. Paleta de Colores Institucional (Comfamiliar)
+    // Combinación de Azules, Cian y Naranja corporativo
+    const corporatePalette = [
+        '#0056b3', // Azul Principal
+        '#0ea5e9', // Cian Institucional
+        '#0284c7', // Azul Medio
+        '#f97316', // Naranja (Acento)
+        '#7dd3fc', // Azul Cielo
+        '#334155', // Gris Azulado
+        '#0ea5e9', // Repetición Cian
+        '#0c4a6e'  // Azul Muy Oscuro
     ];
 
-    // 3. LIMPIEZA PREVIA
-    // Si ya existe un gráfico, lo destruimos para liberar memoria y evitar superposiciones
+    // 4. Limpiar gráfico anterior
     if (chartInstance) {
         chartInstance.destroy();
     }
 
-    // 4. CREAR NUEVO GRÁFICO
+    // 5. Configuración y Creación
     chartInstance = new Chart(ctx, {
         type: chartType,
         data: {
             labels: labels,
             datasets: [{
-                label: metric === 'capacity' ? 'Capacidad Total (GB)' : 'Cantidad de Unidades',
+                label: metric === 'capacity' ? 'Capacidad (GB)' : 'Unidades',
                 data: values,
-                backgroundColor: colors.slice(0, labels.length), // Asignamos colores cíclicamente
-                borderColor: '#000', // Borde negro grueso (Estilo Neo)
+                backgroundColor: corporatePalette.slice(0, labels.length),
+                borderColor: borderColor,
                 borderWidth: 2,
-                hoverOffset: 4
+                hoverOffset: 10
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: { duration: 800, easing: 'easeOutQuart' },
             plugins: {
                 legend: {
-                    position: 'right',
+                    position: 'bottom',
                     labels: {
-                        font: { family: "'Space Grotesk', sans-serif", size: 12 },
-                        color: '#000',
-                        usePointStyle: true,
-                        pointStyle: 'rectRounded'
+                        color: textColor,
+                        font: { family: "'Space Grotesk', sans-serif", size: 11, weight: '500' },
+                        padding: 20,
+                        usePointStyle: true
                     }
                 },
                 title: {
                     display: true,
-                    text: generateTitle(groupBy, metric),
+                    text: formatChartTitle(groupBy, metric),
+                    color: textColor,
                     font: { family: "'Space Grotesk', sans-serif", size: 16, weight: 'bold' },
-                    color: '#000',
-                    padding: { bottom: 20 }
+                    padding: { bottom: 10 }
                 },
                 tooltip: {
-                    backgroundColor: '#000',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    borderColor: '#fff',
-                    borderWidth: 1,
-                    cornerRadius: 0, // Bordes cuadrados (Brutalist)
+                    backgroundColor: borderColor, // El tooltip usa el color de los bordes (negro/blanco)
+                    titleColor: style.getPropertyValue('--bg-color'),
+                    bodyColor: style.getPropertyValue('--bg-color'),
+                    padding: 12,
+                    displayColors: true,
+                    cornerRadius: 4,
                     callbacks: {
-                        label: function(context) {
-                            let label = context.label || '';
-                            let value = context.parsed;
-                            if (chartType === 'bar') value = context.parsed.y; // En barras el valor es Y
-
+                        label: (context) => {
+                            let val = context.raw;
                             if (metric === 'capacity') {
-                                // Convertir a TB si es muy grande
-                                if (value >= 1000) return `${label}: ${(value/1000).toFixed(2)} TB`;
-                                return `${label}: ${value} GB`;
+                                return ` ${val >= 1000 ? (val/1000).toFixed(2) + ' TB' : val + ' GB'}`;
                             }
-                            return `${label}: ${value} unds`;
+                            return ` ${val} Unidades`;
                         }
                     }
                 }
             },
-            // Configuración específica si es gráfico de barras
+            // Configuración de ejes (solo si es gráfico de barras)
             scales: chartType === 'bar' ? {
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#e0e0e0', drawBorder: false },
-                    ticks: { color: '#000', font: { family: "'Space Grotesk', sans-serif" } }
+                    grid: { color: 'rgba(100, 116, 139, 0.1)' },
+                    ticks: { color: textColor, font: { family: "'Space Grotesk'" } }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#000', font: { family: "'Space Grotesk', sans-serif" } }
+                    ticks: { color: textColor, font: { family: "'Space Grotesk'" } }
                 }
-            } : {
-                // Si no es barras, ocultamos los ejes
-                x: { display: false },
-                y: { display: false }
-            }
+            } : {}
         }
     });
 }
 
-// --- UTILIDADES INTERNAS ---
-
-function processData(data, groupBy, metric) {
-    const result = {};
-
+/**
+ * Transforma los datos crudos en un objeto de frecuencias o sumas
+ */
+function processChartData(data, field, metric) {
+    const counts = {};
     data.forEach(item => {
-        // Obtenemos la clave (Ej: "Samsung", "Bueno", "SSD")
-        // Si el campo está vacío, ponemos "Sin Datos"
-        let key = item[groupBy];
-        if (!key || key.trim() === '') key = 'Desconocido';
+        let key = item[field] || 'No definido';
         
-        // Normalizamos texto (para que "samsung" y "Samsung" sean lo mismo)
-        key = String(key).toUpperCase(); 
+        // Normalización para visualización
+        if (field === 'equipoId' && key === '') key = 'Sin Ubicación';
+        
+        if (!counts[key]) counts[key] = 0;
 
-        // Inicializamos si no existe
-        if (!result[key]) result[key] = 0;
-
-        // Sumamos
         if (metric === 'count') {
-            result[key] += 1; // Contamos 1 por cada disco
-        } else if (metric === 'capacity') {
-            // Sumamos la capacidad (asegurando que sea número)
-            result[key] += Number(item.capacidad) || 0;
+            counts[key] += 1;
+        } else {
+            counts[key] += Number(item.capacidad) || 0;
         }
     });
-
-    return result;
+    return counts;
 }
 
-function generateTitle(groupBy, metric) {
-    const metricText = metric === 'count' ? 'Cantidad de Discos' : 'Capacidad Total';
-    const groupText = {
-        'marca': 'por Marca',
-        'estado': 'por Estado',
-        'tipo': 'por Tipo',
-        'equipoId': 'por Equipo'
+/**
+ * Genera un título amigable para el gráfico
+ */
+function formatChartTitle(groupBy, metric) {
+    const metricName = metric === 'count' ? 'Distribución' : 'Capacidad Total';
+    const groupName = {
+        'marca': 'por Fabricante',
+        'estado': 'por Estado Operativo',
+        'tipo': 'por Tecnología',
+        'equipoId': 'por Ubicación Física'
     }[groupBy] || groupBy;
 
-    return `${metricText} ${groupText}`;
+    return `${metricName} ${groupName}`;
 }

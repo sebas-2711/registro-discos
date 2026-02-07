@@ -1,9 +1,14 @@
 // js/utils/import-excel.js
 import { addDisk } from "../services/inventory.js";
 
-let importedDataCache = []; // Memoria temporal
+/**
+ * GESTOR DE IMPORTACIÓN - COMFAMILIAR RISARALDA
+ * Traduce formatos de Excel externos al esquema institucional.
+ */
 
-// 1. LEER EL ARCHIVO EXCEL
+let importedDataCache = []; // Cache temporal para previsualización
+
+// 1. PROCESAMIENTO DEL ARCHIVO EXCEL
 export const handleFileSelect = (event, callback) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -13,49 +18,42 @@ export const handleFileSelect = (event, callback) => {
     reader.onload = (e) => {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-        
-        // Leemos la primera hoja
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         
-        // Convertimos a JSON (array de objetos)
+        // Convertimos a JSON plano
         const rawData = XLSX.utils.sheet_to_json(sheet);
         
-        // --- MAPEO INTELIGENTE ---
-        // Aquí "traducimos" tus columnas largas al formato del sistema
+        // Mapeo inteligente de columnas institucionales
         importedDataCache = rawData.map((row, index) => {
-            
-            // 1. Detectar Marca y Capacidad (si vienen juntas o separadas)
             let marca = row['Marca'] || 'Genérico';
             let capacidad = row['Capacidad'] || 0;
             
-            // Si existe la columna combinada "Marca y capacidad" (Tu caso)
+            // Lógica para columnas combinadas tipo "HGST 1TB"
             if (row['Marca y capacidad']) {
                 const parsed = parseMarcaCapacidad(row['Marca y capacidad']);
                 marca = parsed.marca;
                 capacidad = parsed.capacidad;
             }
 
-            // 2. Traducir Estado (Ej: "A" -> "Bueno")
+            // Traducción de estados operativos
             let estadoRaw = row['Estado del disco'] || row['Estado'] || 'Bueno';
             let estado = 'Bueno';
-            if (estadoRaw === 'A') estado = 'Bueno';
-            else if (estadoRaw === 'M') estado = 'Malo';
-            else if (['R', 'P'].includes(estadoRaw)) estado = 'Por revisar';
-            else estado = estadoRaw; // Si ya dice "Bueno", lo dejamos igual
+            if (estadoRaw === 'A' || estadoRaw === 'Operativo') estado = 'Bueno';
+            else if (estadoRaw === 'M' || estadoRaw === 'Baja') estado = 'Malo';
+            else estado = 'Por revisar';
 
             return {
-                tempId: index, 
-                // Buscamos la columna por su nombre exacto en TU Excel o por el nombre corto
-                codigoInterno: row['D /Código interno de la aplicación'] || row['Codigo'] || row['Código'] || 'S/N',
+                tempId: index,
+                codigoInterno: row['D /Código interno de la aplicación'] || row['Codigo'] || 'S/N',
                 equipoId: row['ID del equipo donde se almacena físicamente las unidades de disco'] || row['Equipo'] || '',
                 tipo: row['Tipo'] || 'HDD',
                 marca: marca,
                 capacidad: capacidad,
-                serial: row['No. de Serie'] || row['Serie'] || row['Serial'] || 'S/N',
+                serial: row['No. de Serie'] || row['Serie'] || 'S/N',
                 estado: estado,
                 observaciones: row['Observaciones'] || '',
-                fechaCompra: new Date().toISOString().split('T')[0], // Fecha hoy
+                fechaCompra: new Date().toISOString().split('T')[0],
                 fechaInstalacion: ''
             };
         });
@@ -66,51 +64,27 @@ export const handleFileSelect = (event, callback) => {
     reader.readAsArrayBuffer(file);
 };
 
-// --- FUNCIÓN AUXILIAR PARA SEPARAR "HGST 1TB" ---
-function parseMarcaCapacidad(texto) {
-    if (!texto) return { marca: 'Genérico', capacidad: 0 };
-    
-    // Convertir a texto por seguridad
-    const str = String(texto).trim();
-    
-    // Buscamos patrones como "1TB", "500GB", "500 GB"
-    // Regex: Busca dígitos seguidos opcionalmente de espacio y luego TB o GB
-    const match = str.match(/(\d+)\s*(TB|GB|gb|tb)/i);
-    
-    if (match) {
-        let num = parseInt(match[1]);
-        let unidad = match[2].toUpperCase();
-        
-        // Calcular GBs
-        let totalGB = (unidad === 'TB') ? num * 1000 : num;
-        
-        // La marca es todo lo que NO es la capacidad
-        // Reemplazamos la parte de la capacidad por vacío y limpiamos espacios
-        let marcaLimpia = str.replace(match[0], '').trim();
-        if(marcaLimpia === '') marcaLimpia = 'Genérico'; // Por si solo decía "1TB"
-        
-        return { marca: marcaLimpia, capacidad: totalGB };
-    }
-    
-    // Si no encontramos capacidad, devolvemos todo como marca
-    return { marca: str, capacidad: 0 };
-}
-
-// 2. PREVISUALIZACIÓN (Igual que antes)
+// 2. RENDERIZADO DE PREVISUALIZACIÓN (Compatible con Modo Oscuro)
 export const renderImportPreview = (data) => {
     const tbody = document.getElementById("import-table-body");
+    if (!tbody) return;
+    
     tbody.innerHTML = "";
 
     data.forEach(disk => {
         const tr = document.createElement("tr");
+        // Estilos dinámicos para que se vea bien en cualquier tema
+        tr.style.borderBottom = "1px solid var(--border-color)";
+        
         tr.innerHTML = `
-            <td style="text-align: center;">
-                <input type="checkbox" class="import-checkbox" data-id="${disk.tempId}" checked style="transform: scale(1.5); cursor: pointer;">
+            <td style="text-align: center; padding: 10px;">
+                <input type="checkbox" class="import-checkbox" data-id="${disk.tempId}" checked 
+                       style="transform: scale(1.4); cursor: pointer; accent-color: var(--primary);">
             </td>
-            <td>${disk.codigoInterno}</td>
-            <td>${disk.marca}</td>
-            <td>${disk.serial}</td>
-            <td>${disk.capacidad} GB</td>
+            <td style="color: var(--text-color); font-weight: 500;">${disk.codigoInterno}</td>
+            <td style="color: var(--text-color);">${disk.marca}</td>
+            <td style="color: var(--text-color); font-family: monospace;">${disk.serial}</td>
+            <td style="color: var(--primary); font-weight: bold;">${disk.capacidad} GB</td>
         `;
         tbody.appendChild(tr);
     });
@@ -118,7 +92,7 @@ export const renderImportPreview = (data) => {
     updateSelectionCount();
 };
 
-// 3. GUARDAR (Igual que antes)
+// 3. GUARDAR SELECCIÓN EN FIREBASE
 export const saveSelectedImport = async () => {
     const checkboxes = document.querySelectorAll(".import-checkbox:checked");
     const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.dataset.id));
@@ -126,12 +100,12 @@ export const saveSelectedImport = async () => {
     const disksToSave = importedDataCache.filter(d => selectedIds.includes(d.tempId));
     
     if (disksToSave.length === 0) {
-        alert("No has seleccionado ningún disco.");
+        alert("Selecciona al menos un registro para importar.");
         return 0;
     }
 
     const promises = disksToSave.map(disk => {
-        const { tempId, ...diskData } = disk;
+        const { tempId, ...diskData } = disk; // Limpiamos ID temporal antes de subir
         return addDisk(diskData);
     });
 
@@ -139,8 +113,24 @@ export const saveSelectedImport = async () => {
     return disksToSave.length;
 };
 
+// --- UTILIDADES ---
+
 export const updateSelectionCount = () => {
     const count = document.querySelectorAll(".import-checkbox:checked").length;
     const counter = document.getElementById("import-count");
-    if (counter) counter.textContent = count;
+    if (counter) counter.textContent = `${count} seleccionados`;
 };
+
+function parseMarcaCapacidad(texto) {
+    const str = String(texto).trim();
+    const match = str.match(/(\d+)\s*(TB|GB)/i);
+    
+    if (match) {
+        let num = parseInt(match[1]);
+        let unidad = match[2].toUpperCase();
+        let totalGB = (unidad === 'TB') ? num * 1000 : num;
+        let marcaLimpia = str.replace(match[0], '').trim() || 'Genérico';
+        return { marca: marcaLimpia, capacidad: totalGB };
+    }
+    return { marca: str, capacidad: 0 };
+}

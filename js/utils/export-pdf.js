@@ -1,37 +1,99 @@
 // js/utils/export-pdf.js
 
-export function exportToPdf(data) {
+/**
+ * GENERADOR DE REPORTES PDF - COMFAMILIAR RISARALDA
+ * Crea documentos oficiales con el inventario seleccionado o filtrado.
+ */
+
+export const exportToPdf = (data) => {
+    if (!data || data.length === 0) {
+        alert("No hay datos seleccionados para exportar.");
+        return;
+    }
+
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const doc = new jsPDF('l', 'mm', 'a4'); // Orientación Horizontal (Landscape)
+
+    // --- 1. ENCABEZADO INSTITUCIONAL ---
+    const logoUrl = "https://www.ssf.gov.co/documents/20127/107472/comfamiliar+risaralda+supersubsidio.jpeg/508fb8c5-e8a4-a34e-3d5a-db473df17743?version=1.0&t=1671123816125";
     
-    // Título
+    // Añadir Logo
+    doc.addImage(logoUrl, 'JPEG', 14, 10, 40, 15);
+    
+    // Título y Metadatos
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
-    doc.text("Inventario de Discos - Reporte", 14, 20);
+    doc.setTextColor(0, 86, 179); // Azul Comfamiliar (#0056b3)
+    doc.text("REPORTE TÉCNICO DE INVENTARIO - DISCOS", 60, 18);
+    
     doc.setFontSize(10);
-    doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 28);
-    
-    const tableColumn = ["Código", "Equipo", "Marca", "Capacidad", "Serie", "Estado"];
-    const tableRows = [];
+    doc.setTextColor(100);
+    doc.setFont("helvetica", "normal");
+    const fecha = new Date().toLocaleString();
+    doc.text(`Generado el: ${fecha}`, 60, 24);
+    doc.text(`Total de registros: ${data.length}`, 60, 29);
 
-    data.forEach(disk => {
-        const row = [
-            disk.codigoInterno,
-            disk.equipoId,
-            disk.marca,
-            disk.capacidad + " GB",
-            disk.serial,
-            disk.estado
-        ];
-        tableRows.push(row);
-    });
+    // --- 2. CONFIGURACIÓN DE TABLA ---
+    const columns = [
+        { header: 'CÓDIGO', dataKey: 'codigoInterno' },
+        { header: 'EQUIPO', dataKey: 'equipoId' },
+        { header: 'TIPO', dataKey: 'tipo' },
+        { header: 'MARCA', dataKey: 'marca' },
+        { header: 'CAPACIDAD', dataKey: 'capacidad' },
+        { header: 'SERIAL', dataKey: 'serial' },
+        { header: 'ESTADO', dataKey: 'estado' }
+    ];
 
+    const rows = data.map(disk => ({
+        ...disk,
+        capacidad: `${disk.capacidad} GB`,
+        estado: disk.estado.toUpperCase()
+    }));
+
+    // --- 3. GENERACIÓN CON AUTOTABLE ---
     doc.autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 35,
-        theme: 'grid', // Estilo de rejilla
-        headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] } // Cabecera negra estilo Neo
+        columns: columns,
+        body: rows,
+        startY: 40,
+        margin: { top: 40 },
+        styles: {
+            font: "helvetica",
+            fontSize: 9,
+            cellPadding: 3,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.1,
+        },
+        headStyles: {
+            fillColor: [0, 86, 179], // Azul Institucional
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            halign: 'center'
+        },
+        alternateRowStyles: {
+            fillColor: [245, 247, 250]
+        },
+        columnStyles: {
+            codigoInterno: { fontStyle: 'bold' },
+            capacidad: { halign: 'right' },
+            serial: { fontStyle: 'italic' }
+        }
     });
-    
-    doc.save("Reporte_Discos.pdf");
-}
+
+    // --- 4. PIE DE PÁGINA ---
+    const pageCount = doc.internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+            `Comfamiliar Risaralda - Departamento de TI - Página ${i} de ${pageCount}`,
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 10,
+            { align: 'center' }
+        );
+    }
+
+    // Guardar archivo
+    const fileName = `Inventario_Discos_Comfamiliar_${new Date().getTime()}.pdf`;
+    doc.save(fileName);
+};
