@@ -1,30 +1,31 @@
 /* css/components.css */
 
-/* --- 1. BOTONES NEO-BRUTALISM (CORPORATIVOS) --- */
+/* --- 1. BOTONES (ESTILO CORPORATIVO + NEO) --- */
 .neo-btn {
     background-color: var(--surface-color);
     color: var(--text-color);
     border-radius: var(--border-radius-pill);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    padding: 0.7em 1.5em;
+    padding: 0.6em 1.2em;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
     border: var(--border-width) solid var(--border-color);
-    box-shadow: 0 0 0 0 var(--shadow-color); /* Sombra inicial invisible */
+    box-shadow: 0 0 0 0 var(--shadow-color); /* Sin sombra por defecto */
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-decoration: none;
+    white-space: nowrap;
 }
 
-/* Hover: Elevación + Sombra Dura */
+/* Hover: Elevación sutil + Sombra Dura */
 .neo-btn:hover {
-    transform: translateY(-3px) translateX(-2px);
-    box-shadow: var(--shadow-hard); /* Usa la variable de sombra dinámica */
-    background-color: var(--bg-color); /* Ligero cambio de fondo */
+    transform: translateY(-2px) translateX(-1px);
+    box-shadow: var(--shadow-hard);
+    background-color: var(--bg-color);
 }
 
 /* Active: Click */
@@ -33,21 +34,21 @@
     box-shadow: 0 0 0 0 var(--shadow-color);
 }
 
-/* Variantes de Color */
+/* Variantes */
 .neo-btn.primary {
     background-color: var(--primary);
-    color: white; /* Siempre blanco para contraste */
+    color: white; /* Texto blanco sobre azul */
     border-color: var(--border-color);
 }
 .neo-btn.primary:hover { background-color: var(--primary-hover); }
 
-.neo-btn.danger { background-color: var(--danger); color: white; }
-.neo-btn.success { background-color: var(--success); color: white; }
-.neo-btn.warning { background-color: var(--warning); color: white; }
+.neo-btn.success { background-color: var(--success); color: white; border-color: var(--border-color); }
+.neo-btn.danger { background-color: var(--danger); color: white; border-color: var(--border-color); }
+.neo-btn.warning { background-color: var(--warning); color: white; border-color: var(--border-color); }
 
 .neo-btn.ghost {
     background-color: transparent;
-    border: 2px dashed var(--border-color);
+    border: 1px dashed var(--border-color); /* Borde punteado discreto */
     color: var(--text-color);
     box-shadow: none !important;
 }
@@ -59,6 +60,13 @@
 .neo-btn.small {
     padding: 0.4em 0.8em;
     font-size: 0.75rem;
+    min-height: 32px;
+}
+
+.neo-btn.icon-only {
+    width: 36px; height: 36px; padding: 0;
+    display: flex; justify-content: center; align-items: center;
+    border-radius: 50%;
 }
 
 .neo-btn:disabled {
@@ -82,14 +90,14 @@
 
 .neo-card.no-padding { padding: 0; }
 
-/* Wrapper de Analíticas */
+/* Grid de Analíticas */
 .analytics-wrapper {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 2rem;
+    gap: 1.5rem;
     margin-bottom: 2rem;
 }
-@media (max-width: 768px) { .analytics-wrapper { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .analytics-wrapper { grid-template-columns: 1fr; } }
 
 /* --- 3. INPUTS Y FORMULARIOS --- */
 .neo-input {
@@ -98,8 +106,8 @@
     font-family: inherit;
     font-weight: 500;
     border: var(--border-width) solid var(--border-color);
-    border-radius: var(--border-radius-lg);
-    background: var(--bg-color); /* Fondo grisáceo claro u oscuro */
+    border-radius: 6px; /* Bordes más cuadrados (Tech) */
+    background: var(--bg-color);
     color: var(--text-color);
     outline: none;
     transition: 0.2s;
@@ -108,49 +116,44 @@
 .neo-input:focus {
     background: var(--surface-color);
     border-color: var(--primary);
-    box-shadow: 4px 4px 0 0 var(--border-color);
+    box-shadow: 3px 3px 0 0 var(--border-color); /* Pequeña sombra al foco */
 }
 
-.search-wrapper {
-    position: relative;
-    width: 100%;
-    max-width: 350px;
+/* Labels */
+.form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.form-group label {
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
+/* Buscador con icono */
+.search-wrapper { position: relative; width: 100%; max-width: 400px; }
 .search-icon {
-    position: absolute;
-    right: 15px;
-    top: 50%;
+    position: absolute; right: 12px; top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
     pointer-events: none;
 }
 
-/* Labels */
-.form-group { display: flex; flex-direction: column; gap: 0.5rem; }
-.form-group label {
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-}
-
-/* --- 4. TABLAS --- */
+/* --- 4. TABLAS PROFESIONALES --- */
 .table-container {
     overflow-x: auto;
     border-radius: var(--border-radius-lg);
     border: var(--border-width) solid var(--border-color);
+    background: var(--surface-color);
 }
 
 .neo-table {
     width: 100%;
     border-collapse: collapse;
-    background: var(--surface-color);
     color: var(--text-color);
 }
 
 .neo-table thead {
-    background: var(--accent-blue); /* Header azul suave o gris oscuro */
+    background: var(--accent-blue);
     color: var(--text-color);
     border-bottom: var(--border-width) solid var(--border-color);
 }
@@ -160,150 +163,136 @@
     padding: 1rem;
     font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
     white-space: nowrap;
 }
 
 .neo-table td {
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.95rem;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--border-color); /* Líneas divisorias */
+    font-size: 0.9rem;
     vertical-align: middle;
 }
 .neo-table tr:last-child td { border-bottom: none; }
 
-/* Filas Interactivas */
+/* Fila Interactiva */
 .interactive-row {
     cursor: pointer;
     transition: background-color 0.15s ease;
 }
 .interactive-row:hover {
-    background-color: var(--bg-color) !important;
-    outline: 2px solid var(--primary); /* Borde azul al hacer hover */
+    background-color: var(--accent-blue) !important; /* Resaltado suave */
     position: relative;
-    z-index: 10;
 }
 
 /* Badges de Estado */
 .status-badge {
-    padding: 4px 12px;
-    border-radius: 50px;
+    padding: 4px 10px;
+    border-radius: 4px; /* Badges rectangulares */
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
     display: inline-block;
-    border: 1px solid var(--border-color);
+    border: 1px solid transparent;
 }
-.status-badge.bueno { background: var(--success); color: white; border-color: transparent; }
-.status-badge.malo { background: var(--danger); color: white; border-color: transparent; }
-.status-badge.revisar { background: var(--warning); color: white; border-color: transparent; }
+.status-badge.bueno { background: rgba(14, 165, 233, 0.15); color: var(--success); border-color: var(--success); }
+.status-badge.malo { background: rgba(239, 68, 68, 0.15); color: var(--danger); border-color: var(--danger); }
+.status-badge.revisar { background: rgba(249, 115, 22, 0.15); color: var(--warning); border-color: var(--warning); }
 
-/* --- 5. MODALES --- */
+/* --- 5. MODALES (VENTANAS EMERGENTES) --- */
 .neo-modal {
     margin: auto;
     padding: 0;
     border: var(--border-width) solid var(--border-color);
-    border-radius: 16px;
-    box-shadow: 10px 10px 0 0 var(--shadow-color); /* Sombra profunda */
-    max-width: 600px;
-    width: 90%;
+    border-radius: 12px;
+    box-shadow: 12px 12px 0 0 var(--shadow-color); /* Sombra muy profunda */
+    max-width: 650px;
+    width: 95%;
     background: var(--surface-color);
     color: var(--text-color);
-    opacity: 0;
-    transform: translateY(20px);
+    opacity: 0; transform: translateY(20px);
     transition: opacity 0.3s, transform 0.3s;
 }
 
 .neo-modal[open] { opacity: 1; transform: translateY(0); }
-.neo-modal::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); }
+.neo-modal::backdrop { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); }
 
 .modal-header {
     background: var(--accent-blue);
-    padding: 1.5rem;
+    padding: 1.2rem 1.5rem;
     border-bottom: var(--border-width) solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; justify-content: space-between; align-items: center;
 }
-.modal-header h2 { margin: 0; font-size: 1.25rem; color: var(--text-color); }
+.modal-header h2 { margin: 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
 
 .close-btn {
-    background: transparent;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--text-color);
-    transition: transform 0.2s;
+    background: transparent; border: none; font-size: 1.4rem;
+    cursor: pointer; color: var(--text-color); transition: color 0.2s;
 }
-.close-btn:hover { transform: rotate(90deg); color: var(--danger); }
+.close-btn:hover { color: var(--danger); }
 
 .modal-body { padding: 2rem; background: var(--surface-color); }
 
 .modal-footer {
-    padding: 1.5rem 2rem;
+    padding: 1.2rem 1.5rem;
     background: var(--bg-color);
     border-top: var(--border-width) solid var(--border-color);
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
+    display: flex; justify-content: flex-end; gap: 1rem;
 }
 
-/* Grids */
-.form-grid, .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+/* Grids Internos */
+.form-grid, .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
 .full-width, .detail-item.full { grid-column: span 2; }
 @media (max-width: 600px) { .form-grid, .detail-grid { grid-template-columns: 1fr; } }
 
-/* --- 6. TOOLBAR --- */
+/* --- 6. TOOLBAR & FILTROS --- */
 .toolbar-neo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;
 }
 .toolbar-actions { display: flex; gap: 0.8rem; flex-wrap: wrap; }
 
-/* --- 7. LOGIN SCREEN --- */
+.filter-bar {
+    display: flex; gap: 0.8rem; margin-bottom: 1.5rem; padding: 1rem;
+    background: var(--surface-color);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    align-items: center; flex-wrap: wrap;
+    box-shadow: 4px 4px 0 0 var(--border-color);
+}
+
+/* --- 7. PANTALLA DE LOGIN --- */
 .login-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: var(--bg-color);
     z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
 }
 .login-card {
-    text-align: center;
-    padding: 3rem;
-    max-width: 400px;
-    width: 90%;
+    text-align: center; padding: 3rem; max-width: 400px; width: 90%;
     background: var(--surface-color);
     border: 3px solid var(--border-color);
     box-shadow: 8px 8px 0 0 var(--shadow-color);
 }
-.login-icon i { font-size: 4rem; margin-bottom: 1rem; color: var(--primary); }
 
-/* --- 8. BARRA FLOTANTE (ESTILO OSCURO INVERTIDO) --- */
+/* --- 8. BARRA FLOTANTE (CONTRASTE) --- */
 .floating-bar {
-    /* En modo claro: Fondo negro, texto blanco. En modo oscuro: Fondo blanco, texto negro */
-    background: var(--text-color) !important; 
+    /* Fondo oscuro siempre (o invertido al tema) para resaltar */
+    background: var(--text-color) !important;
     color: var(--bg-color) !important;
     border: 2px solid var(--border-color);
 }
 
-/* User Profile */
+/* --- 9. PERFIL DE USUARIO --- */
 .user-controls {
-    display: flex; align-items: center; gap: 1rem;
+    display: flex; align-items: center; gap: 0.8rem;
     background: var(--surface-color);
-    padding: 0.4rem 1rem;
+    padding: 0.4rem 0.8rem;
     border: var(--border-width) solid var(--border-color);
     border-radius: 50px;
 }
 .avatar {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    border: 2px solid var(--border-color);
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--border-color); object-fit: cover;
 }
