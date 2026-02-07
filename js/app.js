@@ -1,17 +1,15 @@
 // js/app.js
 
-// 1. IMPORTACIONES DE SERVICIOS
+// 1. IMPORTACIONES
 import { subscribeToInventory, addDisk, deleteDisk, updateDisk } from "./services/inventory.js";
 import { loginWithGoogle, logout, subscribeToAuth } from "./services/auth.js";
-
-// 2. IMPORTACIONES DE UI Y UTILIDADES
-import { renderTable, updateKpiCounter } from "./ui/dom.js";
-import { renderBrandChart } from "./ui/charts.js";
+import { renderTable, updateKpiCounter, getSelectedIds, clearSelection } from "./ui/dom.js";
+import { renderDynamicChart } from "./ui/charts.js";
 import { exportToExcel } from "./utils/export-excel.js";
 import { exportToPdf } from "./utils/export-pdf.js";
 import { handleFileSelect, renderImportPreview, saveSelectedImport, updateSelectionCount } from "./utils/import-excel.js";
 
-// --- REFERENCIAS GLOBALES DEL DOM ---
+// --- REFERENCIAS DOM GLOBALES ---
 const loginScreen = document.getElementById("login-screen");
 const userControls = document.getElementById("user-controls");
 const systemStatus = document.getElementById("system-status-badge");
@@ -19,149 +17,235 @@ const userAvatar = document.getElementById("user-avatar");
 const userName = document.getElementById("user-name");
 
 // Modales
-const modal = document.getElementById("disk-modal");         // Crear/Editar
-const detailModal = document.getElementById("details-modal"); // Ver Detalles
-const importModal = document.getElementById("import-modal");  // Importar Excel
+const modal = document.getElementById("disk-modal");
+const detailModal = document.getElementById("details-modal");
+const importModal = document.getElementById("import-modal");
 const overlay = document.getElementById("modal-overlay");
 
-// Formularios e Inputs
+// Formularios
 const form = document.getElementById("disk-form");
 const excelInput = document.getElementById("excel-input");
-const searchInput = document.getElementById("search-input");
 
-// Variables de Estado
-let currentInventory = []; 
-let currentDiskId = null; // ID del disco que estamos viendo/editando actualmente
+// Filtros y Buscadores
+const searchInput = document.getElementById("search-input");
+const filterStatus = document.getElementById("filter-status");
+const filterType = document.getElementById("filter-type");
+const btnClearFilters = document.getElementById("btn-clear-filters");
+
+// Controles de Gráfico
+const chartGroupBy = document.getElementById("chart-group-by");
+const chartMetric = document.getElementById("chart-metric");
+const chartType = document.getElementById("chart-type");
+
+// Botones de Acción Masiva
+const btnBulkDelete = document.getElementById("btn-bulk-delete");
+const btnBulkExcel = document.getElementById("btn-bulk-excel");
+const btnBulkPdf = document.getElementById("btn-bulk-pdf");
+
+// --- VARIABLES DE ESTADO ---
+let currentInventory = [];  // Todos los datos crudos de Firebase
+let filteredInventory = []; // Los datos que se ven actualmente en pantalla
+let currentDiskId = null;
 
 // =================================================================
-// 1. INICIALIZACIÓN Y SEGURIDAD (ENTRY POINT)
+// 1. INICIALIZACIÓN Y AUTH
 // =================================================================
 document.addEventListener("DOMContentLoaded", () => {
     
-    // Escuchar cambios en la autenticación (Login/Logout)
     subscribeToAuth((user) => {
         if (user) {
-            // === USUARIO AUTENTICADO ===
-            console.log("Sesión iniciada:", user.displayName);
-            
-            // 1. UI: Quitar bloqueo y mostrar perfil
+            // LOGIN EXITOSO
             loginScreen.style.display = "none";
             userControls.style.display = "flex";
             systemStatus.style.display = "none";
             
-            // 2. Cargar datos del usuario
             userAvatar.src = user.photoURL;
-            userName.textContent = user.displayName.split(" ")[0]; // Solo el primer nombre
+            userName.textContent = user.displayName.split(" ")[0];
 
-            // 3. Cargar la App (Base de datos)
-            initAppLogic();
-
+            initAppLogic(); // Arrancar la app
         } else {
-            // === USUARIO NO AUTENTICADO ===
-            console.log("Esperando login...");
-            
-            // 1. UI: Poner muro de bloqueo
+            // NO LOGUEADO
             loginScreen.style.display = "flex";
             userControls.style.display = "none";
             systemStatus.style.display = "flex";
-            
-            // 2. Limpiar datos sensibles de la memoria (opcional pero recomendado)
             currentInventory = [];
-            renderTable([]);
+            filteredInventory = [];
         }
     });
 
-    // Conectar botones de Auth
     document.getElementById("btn-login").addEventListener("click", loginWithGoogle);
     document.getElementById("btn-logout").addEventListener("click", logout);
 });
 
-// Función para arrancar la lógica de negocio (Solo si hay login)
 function initAppLogic() {
     subscribeToInventory((data) => {
-        currentInventory = data; // Guardamos copia local para buscar/exportar
-        renderTable(data);
-        updateKpiCounter(data.length);
-        renderBrandChart(data);
+        currentInventory = data;
+        applyFilters(); // Esto actualiza la tabla y los gráficos
     });
 }
 
 // =================================================================
-// 2. GESTIÓN DE MODALES (ABRIR / CERRAR)
+// 2. SISTEMA DE FILTRADO Y GRÁFICOS (EL CEREBRO VISUAL)
 // =================================================================
 
-// Función genérica para cerrar cualquier modal
-const closeModal = (modalToClose) => {
-    modalToClose.close(); // Método nativo del <dialog>
-    overlay.style.display = "none";
+function applyFilters() {
+    // 1. Obtener valores de los inputs
+    const searchTerm = searchInput.value.toLowerCase();
+    const statusVal = filterStatus.value;
+    const typeVal = filterType.value;
+
+    // 2. Filtrar el array principal
+    filteredInventory = currentInventory.filter(disk => {
+        // Filtro de Texto
+        const matchText = (
+            (disk.serial || '').toLowerCase().includes(searchTerm) ||
+            (disk.codigoInterno || '').toLowerCase().includes(searchTerm) ||
+            (disk.marca || '').toLowerCase().includes(searchTerm) ||
+            (disk.equipoId || '').toLowerCase().includes(searchTerm)
+        );
+
+        // Filtro de Estado
+        const matchStatus = statusVal === "all" || disk.estado === statusVal;
+
+        // Filtro de Tipo
+        const matchType = typeVal === "all" || disk.tipo === typeVal;
+
+        return matchText && matchStatus && matchType;
+    });
+
+    // 3. Actualizar UI
+    renderTable(filteredInventory);
+    updateKpiCounter(filteredInventory.length);
     
-    // Si cerramos el formulario de creación, limpiamos los campos
+    // 4. Actualizar Gráfico Dinámico con los datos filtrados
+    updateChart();
+}
+
+// Función para redibujar el gráfico según selectores
+function updateChart() {
+    const groupBy = chartGroupBy.value;
+    const metric = chartMetric.value;
+    const type = chartType.value;
+
+    renderDynamicChart(filteredInventory, groupBy, metric, type);
+}
+
+// LISTENERS DE FILTROS (Se activan al cambiar cualquier cosa)
+[searchInput, filterStatus, filterType].forEach(el => {
+    el.addEventListener("input", applyFilters);
+    el.addEventListener("change", applyFilters);
+});
+
+// LISTENERS DE GRÁFICO (Se activan al cambiar configuración del chart)
+[chartGroupBy, chartMetric, chartType].forEach(el => {
+    el.addEventListener("change", updateChart);
+});
+
+// Botón Limpiar Filtros
+btnClearFilters.addEventListener("click", () => {
+    searchInput.value = "";
+    filterStatus.value = "all";
+    filterType.value = "all";
+    applyFilters();
+});
+
+
+// =================================================================
+// 3. ACCIONES MASIVAS (BARRA FLOTANTE)
+// =================================================================
+
+// ELIMINAR SELECCIONADOS
+btnBulkDelete.addEventListener("click", async () => {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+
+    if (confirm(`⚠ ¿Estás seguro de eliminar ${ids.length} discos seleccionados? Esta acción no tiene vuelta atrás.`)) {
+        const btnOriginalText = btnBulkDelete.innerHTML;
+        btnBulkDelete.innerHTML = "Eliminando...";
+        btnBulkDelete.disabled = true;
+
+        // Eliminar en paralelo (rápido)
+        const promises = ids.map(id => deleteDisk(id));
+        await Promise.all(promises);
+
+        clearSelection(); // Limpiar checkboxes y ocultar barra
+        btnBulkDelete.innerHTML = btnOriginalText;
+        btnBulkDelete.disabled = false;
+        
+        alert("Discos eliminados correctamente.");
+    }
+});
+
+// EXPORTAR SELECCIONADOS (EXCEL)
+btnBulkExcel.addEventListener("click", () => {
+    const ids = getSelectedIds();
+    // Filtramos solo los objetos que coinciden con los IDs seleccionados
+    const selectedData = currentInventory.filter(d => ids.includes(d.id));
+    exportToExcel(selectedData);
+    clearSelection();
+});
+
+// EXPORTAR SELECCIONADOS (PDF)
+btnBulkPdf.addEventListener("click", () => {
+    const ids = getSelectedIds();
+    const selectedData = currentInventory.filter(d => ids.includes(d.id));
+    exportToPdf(selectedData);
+    clearSelection();
+});
+
+
+// =================================================================
+// 4. GESTIÓN DE MODALES (Igual que antes)
+// =================================================================
+
+const closeModal = (modalToClose) => {
+    modalToClose.close();
+    overlay.style.display = "none";
     if(modalToClose === modal) {
         form.reset();
         document.getElementById("disk-id").value = "";
-        document.getElementById("modal-title").textContent = "Registrar Nuevo Disco";
+        document.getElementById("modal-title").textContent = "Registrar Disco";
     }
 };
 
-// Función genérica para abrir cualquier modal
 const showModal = (modalToShow) => {
     modalToShow.showModal();
     overlay.style.display = "block";
 };
 
-// Listeners para botones de cerrar (X) y cancelar
 document.querySelectorAll(".close-btn, #btn-cancel, #btn-cancel-import").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-        const modalElement = e.target.closest("dialog");
-        closeModal(modalElement);
-    });
+    btn.addEventListener("click", (e) => closeModal(e.target.closest("dialog")));
 });
 
-// Cerrar al hacer click fuera (Overlay)
-overlay.addEventListener("click", () => {
-    document.querySelectorAll("dialog[open]").forEach(dialog => closeModal(dialog));
-});
-
-// Abrir Modal de "Añadir Disco"
+overlay.addEventListener("click", () => document.querySelectorAll("dialog[open]").forEach(d => closeModal(d)));
 document.getElementById("btn-open-modal").addEventListener("click", () => showModal(modal));
 
 
 // =================================================================
-// 3. LOGICA DE DETALLES Y EDICIÓN (FILAS INTERACTIVAS)
+// 5. DETALLES Y EDICIÓN (Exposed to Window)
 // =================================================================
 
-// EXPOSE GLOBAL: Esta función se llama desde `dom.js` al hacer click en una fila
 window.openDetailModal = (disk) => {
     currentDiskId = disk.id;
-    
     const content = document.getElementById("detail-content");
     content.innerHTML = `
         <div class="detail-item"><strong>Código:</strong> ${disk.codigoInterno}</div>
-        <div class="detail-item"><strong>Estado:</strong> <span class="status-badge ${getStatusClass(disk.estado)}">${disk.estado}</span></div>
+        <div class="detail-item"><strong>Estado:</strong> ${disk.estado}</div>
         <div class="detail-item"><strong>Marca:</strong> ${disk.marca}</div>
         <div class="detail-item"><strong>Tipo:</strong> ${disk.tipo}</div>
         <div class="detail-item"><strong>Capacidad:</strong> ${disk.capacidad} GB</div>
         <div class="detail-item"><strong>N° Serie:</strong> ${disk.serial}</div>
-        <div class="detail-item full"><strong>Ubicación / Equipo:</strong> ${disk.equipoId}</div>
-        <div class="detail-item full" style="background:#f4f4f4; padding:10px; border:2px solid black; border-radius: 8px;">
-            <strong>Observaciones:</strong><br>${disk.observaciones || 'Sin observaciones registradas.'}
-        </div>
-        <div class="detail-item" style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
-            Compra: ${disk.fechaCompra || '-'}
-        </div>
-        <div class="detail-item" style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
-            Instalación: ${disk.fechaInstalacion || '-'}
+        <div class="detail-item full"><strong>Equipo:</strong> ${disk.equipoId}</div>
+        <div class="detail-item full" style="background:#f4f4f4; padding:10px; border:2px solid black; border-radius:8px;">
+            <strong>Observaciones:</strong><br>${disk.observaciones || 'Sin observaciones.'}
         </div>
     `;
     showModal(detailModal);
 };
 
-// EXPOSE GLOBAL: Función para abrir el formulario en modo "Editar"
 window.openEditModal = (id) => {
     const disk = currentInventory.find(d => d.id === id);
     if (!disk) return;
-
-    // Llenar el formulario con los datos existentes
     document.getElementById("disk-id").value = disk.id;
     document.getElementById("internal-code").value = disk.codigoInterno;
     document.getElementById("host-id").value = disk.equipoId;
@@ -173,48 +257,32 @@ window.openEditModal = (id) => {
     document.getElementById("purchase-date").value = disk.fechaCompra;
     document.getElementById("install-date").value = disk.fechaInstalacion;
     document.getElementById("observations").value = disk.observaciones;
-
-    // Cambiar título del modal
-    document.getElementById("modal-title").textContent = "Editar Información del Disco";
-    
-    // Mostrar modal
+    document.getElementById("modal-title").textContent = "Editar Disco";
     showModal(modal);
 }
 
-// Botón "Editar" dentro del modal de detalles
 document.getElementById("btn-detail-edit").addEventListener("click", () => {
-    closeModal(detailModal); // Cerramos la ficha de detalles
-    window.openEditModal(currentDiskId); // Abrimos el formulario de edición
+    closeModal(detailModal);
+    window.openEditModal(currentDiskId);
 });
 
-// Botón "Eliminar" dentro del modal de detalles
 document.getElementById("btn-detail-delete").addEventListener("click", async () => {
-    if(confirm("⚠ ¿Estás seguro de ELIMINAR este disco permanentemente?")) {
+    if(confirm("⚠ ¿Eliminar este disco?")) {
         await deleteDisk(currentDiskId);
         closeModal(detailModal);
     }
 });
 
-// Helper para clases de color (necesario si renderizamos HTML manual aquí)
-function getStatusClass(status) {
-    if (status === "Bueno") return "bueno";
-    if (status === "Malo") return "malo";
-    return "revisar";
-}
 
 // =================================================================
-// 4. GUARDAR DATOS (CREATE / UPDATE)
+// 6. GUARDAR FORMULARIO
 // =================================================================
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    
-    const diskId = document.getElementById("disk-id").value; // Si tiene ID, es editar. Si no, es crear.
-    const submitBtn = form.querySelector("button[type='submit']");
-    const originalText = submitBtn.textContent;
-    
-    // Feedback visual
-    submitBtn.textContent = "Guardando...";
-    submitBtn.disabled = true;
+    const diskId = document.getElementById("disk-id").value;
+    const btn = form.querySelector("button[type='submit']");
+    btn.textContent = "Guardando...";
+    btn.disabled = true;
 
     const formData = {
         codigoInterno: document.getElementById("internal-code").value,
@@ -230,90 +298,38 @@ form.addEventListener("submit", async (e) => {
     };
 
     try {
-        if (diskId) {
-            await updateDisk(diskId, formData);
-        } else {
-            await addDisk(formData);
-        }
+        if (diskId) await updateDisk(diskId, formData);
+        else await addDisk(formData);
         closeModal(modal);
-    } catch (error) {
-        alert("Error al guardar: " + error.message);
-    } finally {
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-    }
-});
-
-
-// =================================================================
-// 5. IMPORTACIÓN MASIVA (EXCEL)
-// =================================================================
-document.getElementById("btn-import-excel").addEventListener("click", () => excelInput.click());
-
-excelInput.addEventListener("change", (e) => {
-    handleFileSelect(e, (data) => {
-        renderImportPreview(data);
-        showModal(importModal);
-        excelInput.value = ""; // Limpiar input para permitir recargar el mismo archivo
-    });
-});
-
-document.getElementById("select-all-import").addEventListener("change", (e) => {
-    const checkboxes = document.querySelectorAll(".import-checkbox");
-    checkboxes.forEach(cb => cb.checked = e.target.checked);
-    updateSelectionCount();
-});
-
-// Delegación de eventos para la tabla de importación (checkboxes dinámicos)
-document.getElementById("import-table-body").addEventListener("change", (e) => {
-    if (e.target.classList.contains("import-checkbox")) {
-        updateSelectionCount();
-    }
-});
-
-document.getElementById("btn-save-import").addEventListener("click", async () => {
-    const btn = document.getElementById("btn-save-import");
-    const originalText = btn.textContent;
-    btn.textContent = "Guardando...";
-    btn.disabled = true;
-
-    const count = await saveSelectedImport();
+    } catch (err) { alert(err.message); }
     
-    if (count > 0) {
-        alert(`✅ Se importaron ${count} discos correctamente.`);
-        closeModal(importModal);
-    }
-    
-    btn.textContent = originalText;
+    btn.textContent = "Guardar";
     btn.disabled = false;
 });
 
 
 // =================================================================
-// 6. HERRAMIENTAS (BUSCADOR Y EXPORTACIÓN)
+// 7. IMPORTACIÓN EXCEL
 // =================================================================
-
-// Buscador en tiempo real
-searchInput.addEventListener("input", (e) => {
-    const term = e.target.value.toLowerCase();
-    
-    const filtered = currentInventory.filter(d => 
-        (d.serial || '').toLowerCase().includes(term) ||
-        (d.codigoInterno || '').toLowerCase().includes(term) ||
-        (d.marca || '').toLowerCase().includes(term) ||
-        (d.equipoId || '').toLowerCase().includes(term)
-    );
-    
-    renderTable(filtered);
+document.getElementById("btn-import-excel").addEventListener("click", () => excelInput.click());
+excelInput.addEventListener("change", (e) => {
+    handleFileSelect(e, (data) => {
+        renderImportPreview(data);
+        showModal(importModal);
+        excelInput.value = "";
+    });
 });
-
-// Botones de Exportar
-document.getElementById("btn-export-excel").addEventListener("click", () => {
-    if(currentInventory.length > 0) exportToExcel(currentInventory);
-    else alert("No hay datos para exportar.");
+document.getElementById("select-all-import").addEventListener("change", (e) => {
+    document.querySelectorAll(".import-checkbox").forEach(cb => cb.checked = e.target.checked);
+    updateSelectionCount();
 });
-
-document.getElementById("btn-export-pdf").addEventListener("click", () => {
-    if(currentInventory.length > 0) exportToPdf(currentInventory);
-    else alert("No hay datos para exportar.");
+document.getElementById("btn-save-import").addEventListener("click", async () => {
+    const btn = document.getElementById("btn-save-import");
+    btn.textContent = "Guardando...";
+    const count = await saveSelectedImport();
+    if (count > 0) {
+        alert(`¡Importados ${count} discos!`);
+        closeModal(importModal);
+    }
+    btn.textContent = "Guardar Selección";
 });
